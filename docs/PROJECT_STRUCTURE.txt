@@ -1,0 +1,51 @@
+.
+|-- composer.json
+|-- config/
+|   `-- agent-protocol.php
+|-- routes/
+|   `-- agent.php
+|-- src/
+|   |-- Cache/
+|   |   `-- MetadataRepository.php
+|   |-- Console/Commands/
+|   |   |-- AgentCacheCommand.php
+|   |   |-- AgentClearCommand.php
+|   |   |-- AgentExportCommand.php
+|   |   `-- AgentValidateCommand.php
+|   |-- Contracts/
+|   |-- DTO/
+|   |-- Exporters/
+|   |-- Http/Controllers/
+|   |   `-- AgentController.php
+|   |-- Metadata/
+|   |   |-- AgentMetadataGraphBuilder.php
+|   |   |-- MetadataBuildContext.php
+|   |   |-- MetadataCompiler.php
+|   |   |-- OperationFactory.php
+|   |   |-- Introspection/
+|   |   |-- Passes/
+|   |   `-- Providers/
+|   |-- Providers/
+|   |   `-- AgentProtocolServiceProvider.php
+|   |-- Registry/
+|   |-- Support/
+|   `-- Validation/
+|-- tests/
+|   |-- Fixtures/
+|   `-- Unit/
+`-- docs/
+    |-- ARCHITECTURE.md
+    |-- CACHE.md
+    |-- CHANGELOG.md
+    |-- CODE_ARCHAEOLOGY.md
+    |-- CONTRIBUTING.md
+    |-- DISCOVERY.md
+    |-- ENDPOINTS.md
+    |-- INSTALL.md
+    |-- INTERNAL_FLOW.md
+    |-- PROTOCOL.md
+    |-- PROVIDERS.md
+    |-- QUICKSTART.md
+    |-- RFC.md
+    |-- SCENARIOS.md
+    `-- TESTING.md

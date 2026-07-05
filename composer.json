@@ -1,0 +1,64 @@
+{
+    "name": "ronu/laravel-agent-protocol",
+    "description": "Agent Discovery Protocol implementation for Laravel APIs built on top of rest-generic-class metadata.",
+    "type": "library",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Ronu\\LaravelAgentProtocol\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Ronu\\LaravelAgentProtocol\\Tests\\": "tests/"
+        }
+    },
+    "require": {
+        "php": "^8.3",
+        "illuminate/cache": "^11.0|^12.0",
+        "illuminate/config": "^11.0|^12.0",
+        "illuminate/container": "^11.0|^12.0",
+        "illuminate/contracts": "^11.0|^12.0",
+        "illuminate/database": "^11.0|^12.0",
+        "illuminate/http": "^11.0|^12.0",
+        "illuminate/routing": "^11.0|^12.0",
+        "illuminate/support": "^11.0|^12.0",
+        "illuminate/validation": "^11.0|^12.0"
+    },
+    "require-dev": {
+        "laravel/pint": "^1.17",
+        "orchestra/testbench": "^9.0|^10.0",
+        "pestphp/pest": "^2.35|^3.0",
+        "pestphp/pest-plugin-laravel": "^2.4|^3.0",
+        "phpstan/phpstan": "^1.12",
+        "phpunit/phpunit": "^10.5|^11.0",
+        "rector/rector": "^1.2"
+    },
+    "suggest": {
+        "ronu/rest-generic-class": "Provides the CRUD, filtering, relation, scenario and permission conventions that this package exposes as ADP metadata."
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Ronu\\LaravelAgentProtocol\\Providers\\AgentProtocolServiceProvider"
+            ]
+        }
+    },
+    "scripts": {
+        "test": "vendor/bin/pest",
+        "analyse": "vendor/bin/phpstan analyse",
+        "format": "vendor/bin/pint",
+        "rector": "vendor/bin/rector process --dry-run"
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true,
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        },
+        "sort-packages": true,
+        "platform": {
+            "php": "8.3.0"
+        }
+    }
+}
