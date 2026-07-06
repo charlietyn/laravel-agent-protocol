@@ -4,6 +4,7 @@
 
 ```bash
 composer install
+composer validate --strict
 vendor/bin/pint --test
 vendor/bin/phpstan analyse
 vendor/bin/pest
@@ -24,3 +25,5 @@ vendor/bin/pest
 - Documentation updated from real behavior.
 - `agent:validate` still passes.
 - New extension points have a stable contract.
+- Release-impacting changes update [Release and Publishing](RELEASE.md) when
+  the publishing flow changes.

@@ -132,6 +132,7 @@ package only prepares the metadata they need.
 ## Quality
 
 ```bash
+composer quality
 vendor/bin/pest
 vendor/bin/phpstan analyse
 vendor/bin/pint --test
@@ -160,3 +161,4 @@ limits.
 - [End-To-End Example](docs/END_TO_END.md)
 - [Migration](docs/MIGRATION.md)
 - [Success Metrics](docs/METRICS.md)
+- [Release and Publishing](docs/RELEASE.md)

@@ -3,6 +3,29 @@
     "description": "Agent Discovery Protocol implementation for Laravel APIs built on top of rest-generic-class metadata.",
     "type": "library",
     "license": "MIT",
+    "homepage": "https://github.com/charlietyn/laravel-agent-protocol",
+    "keywords": [
+        "adp",
+        "agent",
+        "agent-discovery-protocol",
+        "laravel",
+        "llm",
+        "mcp",
+        "metadata",
+        "n8n",
+        "rest-generic-class"
+    ],
+    "authors": [
+        {
+            "name": "Ronu",
+            "role": "Maintainer"
+        }
+    ],
+    "support": {
+        "issues": "https://github.com/charlietyn/laravel-agent-protocol/issues",
+        "source": "https://github.com/charlietyn/laravel-agent-protocol",
+        "docs": "https://github.com/charlietyn/laravel-agent-protocol#readme"
+    },
     "autoload": {
         "psr-4": {
             "Ronu\\LaravelAgentProtocol\\": "src/"
@@ -45,10 +68,19 @@
         }
     },
     "scripts": {
+        "composer:validate": "composer validate --strict",
         "test": "vendor/bin/pest",
         "analyse": "vendor/bin/phpstan analyse",
         "format": "vendor/bin/pint",
-        "rector": "vendor/bin/rector process --dry-run"
+        "format:test": "vendor/bin/pint --test",
+        "rector": "vendor/bin/rector process --dry-run",
+        "quality": [
+            "@composer:validate",
+            "@format:test",
+            "@analyse",
+            "@test"
+        ],
+        "release": "php scripts/release.php"
     },
     "minimum-stability": "stable",
     "prefer-stable": true,

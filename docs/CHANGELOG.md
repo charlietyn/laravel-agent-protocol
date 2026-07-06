@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Added package publication metadata for Packagist and GitHub.
+- Added MIT license file and Composer dist export rules.
+- Added reusable `scripts/release.php` for Composer library releases.
+- Added tag-driven GitHub release workflow with optional Packagist sync.
+- Added release and publishing documentation.
 - Added operation risk metadata and confirmation requirements.
 - Added resource readiness scoring.
 - Added sensitive-field redaction and visibility metadata.

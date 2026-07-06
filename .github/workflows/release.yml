@@ -1,0 +1,51 @@
+name: release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    env:
+      PACKAGIST_REPOSITORY: ${{ secrets.PACKAGIST_REPOSITORY }}
+      PACKAGIST_TOKEN: ${{ secrets.PACKAGIST_TOKEN }}
+      PACKAGIST_USERNAME: ${{ secrets.PACKAGIST_USERNAME }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Composer validation
+        run: composer validate --strict
+
+      - name: Pint
+        run: vendor/bin/pint --test
+
+      - name: PHPStan
+        run: vendor/bin/phpstan analyse
+
+      - name: Tests
+        run: vendor/bin/pest
+
+      - name: Notify Packagist
+        if: ${{ env.PACKAGIST_USERNAME != '' && env.PACKAGIST_TOKEN != '' }}
+        run: |
+          export REPOSITORY="${PACKAGIST_REPOSITORY:-https://github.com/charlietyn/laravel-agent-protocol.git}"
+          BODY="$(php -r 'echo json_encode(["repository" => getenv("REPOSITORY")]);')"
+          curl --fail-with-body \
+            --request POST \
+            --url https://packagist.org/api/update-package \
+            --header "Authorization: Bearer ${PACKAGIST_USERNAME}:${PACKAGIST_TOKEN}" \
+            --header "Content-Type: application/json" \
+            --data "${BODY}"

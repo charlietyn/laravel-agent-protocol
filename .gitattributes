@@ -1,0 +1,14 @@
+/.github export-ignore
+/.idea export-ignore
+/scripts export-ignore
+/tests export-ignore
+/.gitattributes export-ignore
+/.gitignore export-ignore
+/conversacion claude.txt export-ignore
+/phpstan.neon export-ignore
+/phpunit.xml.dist export-ignore
+/pint.json export-ignore
+/rector.php export-ignore
+/.phpunit.cache export-ignore
+/.phpstan.cache export-ignore
+/.pest.result export-ignore
