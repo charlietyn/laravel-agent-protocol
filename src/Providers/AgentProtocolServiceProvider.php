@@ -11,6 +11,9 @@ use Ronu\LaravelAgentProtocol\Console\Commands\AgentClearCommand;
 use Ronu\LaravelAgentProtocol\Console\Commands\AgentDiscoverCommand;
 use Ronu\LaravelAgentProtocol\Console\Commands\AgentDocsCommand;
 use Ronu\LaravelAgentProtocol\Console\Commands\AgentExportCommand;
+use Ronu\LaravelAgentProtocol\Console\Commands\AgentSchemaDiscoverCommand;
+use Ronu\LaravelAgentProtocol\Console\Commands\AgentSchemaExportCommand;
+use Ronu\LaravelAgentProtocol\Console\Commands\AgentSchemaValidateCommand;
 use Ronu\LaravelAgentProtocol\Console\Commands\AgentValidateCommand;
 use Ronu\LaravelAgentProtocol\Contracts\MetadataCompilerContract;
 use Ronu\LaravelAgentProtocol\Contracts\MetadataRepositoryContract;
@@ -21,6 +24,7 @@ use Ronu\LaravelAgentProtocol\Metadata\Passes\DictionaryPass;
 use Ronu\LaravelAgentProtocol\Metadata\Passes\DocumentationPass;
 use Ronu\LaravelAgentProtocol\Metadata\Passes\FilterDocumentationPass;
 use Ronu\LaravelAgentProtocol\Metadata\Passes\RouteResourcePass;
+use Ronu\LaravelAgentProtocol\Metadata\Passes\SemanticMetadataPass;
 use Ronu\LaravelAgentProtocol\Metadata\Providers\ConfigDictionaryProvider;
 use Ronu\LaravelAgentProtocol\Metadata\Providers\ConfigDocumentationProvider;
 use Ronu\LaravelAgentProtocol\Metadata\Providers\ConfigResourceProvider;
@@ -52,6 +56,7 @@ final class AgentProtocolServiceProvider extends ServiceProvider
         $this->app->tag([
             ConfiguredResourcePass::class,
             RouteResourcePass::class,
+            SemanticMetadataPass::class,
             FilterDocumentationPass::class,
             DictionaryPass::class,
             DocumentationPass::class,
@@ -85,6 +90,9 @@ final class AgentProtocolServiceProvider extends ServiceProvider
                 AgentDocsCommand::class,
                 AgentValidateCommand::class,
                 AgentExportCommand::class,
+                AgentSchemaDiscoverCommand::class,
+                AgentSchemaExportCommand::class,
+                AgentSchemaValidateCommand::class,
             ]);
         }
     }

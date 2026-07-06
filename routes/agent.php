@@ -13,6 +13,7 @@ Route::prefix($prefix)
     ->name('agent-protocol.')
     ->group(function (): void {
         Route::get('/', [AgentController::class, 'index'])->name('index');
+        Route::get('/bundle', [AgentController::class, 'bundle'])->name('bundle');
         Route::get('/modules', [AgentController::class, 'modules'])->name('modules');
         Route::get('/resources', [AgentController::class, 'resources'])->name('resources');
         Route::get('/resources/{resource}/operations', [AgentController::class, 'operations'])

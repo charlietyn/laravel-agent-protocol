@@ -7,6 +7,7 @@ namespace Ronu\LaravelAgentProtocol\Tests\Unit;
 use DateTimeImmutable;
 use PHPUnit\Framework\TestCase;
 use Ronu\LaravelAgentProtocol\DTO\AgentMetadataGraph;
+use Ronu\LaravelAgentProtocol\DTO\FieldDescriptor;
 use Ronu\LaravelAgentProtocol\DTO\ModuleDescriptor;
 use Ronu\LaravelAgentProtocol\DTO\OperationDescriptor;
 use Ronu\LaravelAgentProtocol\DTO\ResourceDescriptor;
@@ -78,5 +79,39 @@ final class ProtocolValidatorTest extends TestCase
         );
 
         self::assertNotSame([], (new ProtocolValidator)->validate($graph));
+    }
+
+    public function test_validator_reports_invalid_semantic_field_metadata(): void
+    {
+        $graph = new AgentMetadataGraph(
+            protocolVersion: '1.0',
+            generatedAt: new DateTimeImmutable,
+            modules: [new ModuleDescriptor('security', 'security', resources: ['security.user'])],
+            resources: [
+                new ResourceDescriptor(
+                    key: 'security.user',
+                    module: 'security',
+                    name: 'user',
+                    fields: [
+                        new FieldDescriptor('status', type: 'enum'),
+                        new FieldDescriptor('department_id', reference: ['complete' => true]),
+                    ],
+                    operations: [
+                        new OperationDescriptor(
+                            scenario: 'query',
+                            method: 'GET',
+                            endpoint: '/api/security/users',
+                            description: 'Query users.',
+                        ),
+                    ],
+                ),
+            ],
+        );
+
+        $errors = implode("\n", (new ProtocolValidator)->validate($graph));
+
+        self::assertStringContainsString('enum but has no enum_values', $errors);
+        self::assertStringContainsString('reference must include a resource', $errors);
+        self::assertStringContainsString('reference must include a lookup_field', $errors);
     }
 }

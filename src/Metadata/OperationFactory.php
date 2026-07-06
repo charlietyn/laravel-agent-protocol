@@ -98,6 +98,7 @@ final class OperationFactory
             security: $security,
             examples: $this->arrayList($overrides['examples'] ?? []),
             sideEffects: $this->arrayValue($overrides['side_effects'] ?? []),
+            annotations: $this->arrayValue($overrides['annotations'] ?? $overrides['mcp_annotations'] ?? []),
         );
     }
 
@@ -142,6 +143,7 @@ final class OperationFactory
             security: $security,
             examples: $this->arrayList($overrides['examples'] ?? []),
             sideEffects: $this->arrayValue($overrides['side_effects'] ?? []),
+            annotations: $this->arrayValue($overrides['annotations'] ?? $overrides['mcp_annotations'] ?? []),
         );
     }
 

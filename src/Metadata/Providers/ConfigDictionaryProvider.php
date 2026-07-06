@@ -17,6 +17,12 @@ final readonly class ConfigDictionaryProvider implements DictionaryProvider
     {
         $dictionary = $this->config->get('agent-protocol.dictionary', []);
 
-        return is_array($dictionary) ? $dictionary : [];
+        if (! is_array($dictionary) || ! (bool) ($dictionary['enabled'] ?? true)) {
+            return [];
+        }
+
+        unset($dictionary['enabled'], $dictionary['purpose']);
+
+        return $dictionary;
     }
 }

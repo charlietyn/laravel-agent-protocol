@@ -6,6 +6,7 @@ namespace Ronu\LaravelAgentProtocol\Metadata\Introspection;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 use Ronu\LaravelAgentProtocol\DTO\FieldDescriptor;
 use Ronu\LaravelAgentProtocol\DTO\ValidationDescriptor;
 
@@ -53,18 +54,26 @@ final class ModelInspector
         ));
 
         $fields = array_map(
-            fn (string $field): FieldDescriptor => new FieldDescriptor(
-                name: $field,
-                type: $this->typeFor($field, $casts, $model),
-                nullable: null,
-                fillable: in_array($field, $fillable, true),
-                cast: $this->castFor($field, $casts),
-                validationRules: $validationByField[$field] ?? [],
-                filterable: ! in_array($field, $sensitiveFields, true),
-                selectable: ! in_array($field, $hiddenFields, true),
-                sensitive: in_array($field, $sensitiveFields, true),
-                visible: true,
-            ),
+            function (string $field) use ($casts, $model, $fillable, $validationByField, $sensitiveFields, $hiddenFields): FieldDescriptor {
+                $validationRules = $validationByField[$field] ?? [];
+                $enumValues = $this->enumValuesFromRules($validationRules);
+                $type = $this->typeFor($field, $casts, $model);
+
+                return new FieldDescriptor(
+                    name: $field,
+                    type: $enumValues !== [] && in_array($type, ['mixed', 'string'], true) ? 'enum' : $type,
+                    nullable: null,
+                    fillable: in_array($field, $fillable, true),
+                    cast: $this->castFor($field, $casts),
+                    validationRules: $validationRules,
+                    filterable: ! in_array($field, $sensitiveFields, true),
+                    selectable: ! in_array($field, $hiddenFields, true),
+                    sensitive: in_array($field, $sensitiveFields, true),
+                    visible: true,
+                    label: Str::of($field)->replace('_', ' ')->headline()->toString(),
+                    enumValues: $enumValues,
+                );
+            },
             $fieldNames,
         );
 
@@ -211,5 +220,28 @@ final class ModelInspector
         }
 
         return null;
+    }
+
+    /**
+     * @param  array<int, string>  $rules
+     * @return array<int, array<string, mixed>>
+     */
+    private function enumValuesFromRules(array $rules): array
+    {
+        foreach ($rules as $rule) {
+            if (! str_starts_with($rule, 'in:')) {
+                continue;
+            }
+
+            return array_values(array_filter(array_map(
+                fn (string $value): array => [
+                    'value' => $value,
+                    'label' => Str::of($value)->replace(['_', '-'], ' ')->headline()->toString(),
+                ],
+                array_filter(array_map('trim', explode(',', substr($rule, 3))), fn (string $value): bool => $value !== ''),
+            )));
+        }
+
+        return [];
     }
 }

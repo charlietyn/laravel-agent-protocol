@@ -43,8 +43,13 @@ final class ExporterTest extends TestCase
 
         $schema = (new JsonSchemaMetadataExporter)->export($graph);
         $mcp = (new McpManifestExporter)->export($graph);
+        $manifest = json_decode($mcp, true);
 
         self::assertStringContainsString('security.user.create', $schema);
         self::assertStringContainsString('create_security_user', $mcp);
+        self::assertFalse($manifest['tools'][0]['annotations']['readOnlyHint']);
+        self::assertFalse($manifest['tools'][0]['annotations']['destructiveHint']);
+        self::assertFalse($manifest['tools'][0]['annotations']['idempotentHint']);
+        self::assertSame('medium', $manifest['tools'][0]['x-adp']['risk_level']);
     }
 }

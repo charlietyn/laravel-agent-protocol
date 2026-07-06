@@ -22,33 +22,56 @@ final readonly class MetadataRepository implements MetadataRepositoryContract
         private Container $container,
     ) {}
 
-    public function get(): AgentMetadataGraph
+    /**
+     * @param  array<string, mixed>|null  $variation
+     */
+    public function get(?array $variation = null): AgentMetadataGraph
     {
         if (! $this->enabled()) {
             return $this->compiler->compile();
         }
 
+        if ($this->driver() === 'compiled_file') {
+            return $this->getFromCompiledFile($variation);
+        }
+
         return $this->store()->remember(
-            $this->key(),
+            $this->key($variation),
             $this->ttl(),
             fn (): AgentMetadataGraph => $this->compiler->compile(),
         );
     }
 
-    public function refresh(): AgentMetadataGraph
+    /**
+     * @param  array<string, mixed>|null  $variation
+     */
+    public function refresh(?array $variation = null): AgentMetadataGraph
     {
         $graph = $this->compiler->compile();
 
         if ($this->enabled()) {
-            $this->store()->put($this->key(), $graph, $this->ttl());
+            if ($this->driver() === 'compiled_file') {
+                $this->putCompiledFile($graph, $variation);
+            } else {
+                $this->store()->put($this->key($variation), $graph, $this->ttl());
+            }
         }
 
         return $graph;
     }
 
-    public function clear(): void
+    /**
+     * @param  array<string, mixed>|null  $variation
+     */
+    public function clear(?array $variation = null): void
     {
-        $this->store()->forget($this->key());
+        if ($this->driver() === 'compiled_file') {
+            $this->forgetCompiledFile($variation);
+
+            return;
+        }
+
+        $this->store()->forget($this->key($variation));
     }
 
     private function enabled(): bool
@@ -56,12 +79,22 @@ final readonly class MetadataRepository implements MetadataRepositoryContract
         return (bool) $this->config->get('agent-protocol.cache.enabled', true);
     }
 
-    private function key(): string
+    private function driver(): string
+    {
+        $driver = $this->config->get('agent-protocol.cache.driver', 'store');
+
+        return is_string($driver) && $driver !== '' ? $driver : 'store';
+    }
+
+    /**
+     * @param  array<string, mixed>|null  $variation
+     */
+    private function key(?array $variation = null): string
     {
         $key = $this->config->get('agent-protocol.cache.key', 'agent-protocol:metadata:v1');
 
         $base = is_string($key) && $key !== '' ? $key : 'agent-protocol:metadata:v1';
-        $variation = $this->variation();
+        $variation ??= $this->variation();
 
         if ($variation === []) {
             return $base;
@@ -84,6 +117,84 @@ final readonly class MetadataRepository implements MetadataRepositoryContract
         return is_string($store) && $store !== ''
             ? $this->cache->store($store)
             : $this->cache->store();
+    }
+
+    /**
+     * @param  array<string, mixed>|null  $variation
+     */
+    private function getFromCompiledFile(?array $variation = null): AgentMetadataGraph
+    {
+        $path = $this->compiledPath($variation);
+
+        if (is_file($path) && ! $this->compiledFileExpired($path)) {
+            $payload = json_decode((string) file_get_contents($path), true);
+
+            if (is_array($payload)) {
+                return (new CompiledMetadataGraphHydrator)->hydrate($payload);
+            }
+        }
+
+        return $this->refresh($variation);
+    }
+
+    /**
+     * @param  array<string, mixed>|null  $variation
+     */
+    private function putCompiledFile(AgentMetadataGraph $graph, ?array $variation = null): void
+    {
+        $path = $this->compiledPath($variation);
+        $directory = dirname($path);
+
+        if (! is_dir($directory)) {
+            mkdir($directory, 0775, true);
+        }
+
+        file_put_contents(
+            $path,
+            (string) json_encode($graph->toArray(), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES),
+            LOCK_EX,
+        );
+    }
+
+    /**
+     * @param  array<string, mixed>|null  $variation
+     */
+    private function forgetCompiledFile(?array $variation = null): void
+    {
+        $path = $this->compiledPath($variation);
+
+        if (is_file($path)) {
+            unlink($path);
+        }
+    }
+
+    private function compiledFileExpired(string $path): bool
+    {
+        $ttl = $this->ttl();
+
+        return $ttl > 0 && (filemtime($path) ?: 0) + $ttl < time();
+    }
+
+    /**
+     * @param  array<string, mixed>|null  $variation
+     */
+    private function compiledPath(?array $variation = null): string
+    {
+        $directory = $this->config->get('agent-protocol.cache.path');
+        $filename = $this->config->get('agent-protocol.cache.compiled_filename', 'metadata.json');
+        $directory = is_string($directory) && $directory !== '' ? $directory : (getcwd() ?: sys_get_temp_dir());
+        $filename = is_string($filename) && $filename !== '' ? $filename : 'metadata.json';
+        $variation ??= $this->variation();
+
+        if ($variation !== []) {
+            $extension = pathinfo($filename, PATHINFO_EXTENSION);
+            $basename = $extension !== ''
+                ? substr($filename, 0, -strlen($extension) - 1)
+                : $filename;
+            $filename = $basename.'-'.sha1((string) json_encode($variation)).($extension !== '' ? '.'.$extension : '');
+        }
+
+        return rtrim($directory, DIRECTORY_SEPARATOR.'/\\').DIRECTORY_SEPARATOR.$filename;
     }
 
     /**

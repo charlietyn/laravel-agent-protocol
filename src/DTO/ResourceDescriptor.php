@@ -101,6 +101,33 @@ final readonly class ResourceDescriptor implements JsonSerializable
     }
 
     /**
+     * @param  array<int, FieldDescriptor>  $fields
+     */
+    public function withFields(array $fields): self
+    {
+        return new self(
+            key: $this->key,
+            module: $this->module,
+            name: $this->name,
+            endpoint: $this->endpoint,
+            model: $this->model,
+            table: $this->table,
+            primaryKey: $this->primaryKey,
+            description: $this->description,
+            fields: $fields,
+            relations: $this->relations,
+            operations: $this->operations,
+            capabilities: $this->capabilities,
+            filters: $this->filters,
+            security: $this->security,
+            readiness: $this->readiness,
+            visibility: $this->visibility,
+            examples: $this->examples,
+            meta: $this->meta,
+        );
+    }
+
+    /**
      * @template T of object
      *
      * @param  array<int, T>  $first

@@ -21,15 +21,25 @@ return [
 
     'cache' => [
         'enabled' => env('AGENT_PROTOCOL_CACHE_ENABLED', true),
+        'driver' => env('AGENT_PROTOCOL_CACHE_DRIVER', 'store'), // store|compiled_file
         'store' => env('AGENT_PROTOCOL_CACHE_STORE', env('CACHE_STORE')),
         'key' => env('AGENT_PROTOCOL_CACHE_KEY', 'agent-protocol:metadata:v1'),
         'ttl' => (int) env('AGENT_PROTOCOL_CACHE_TTL', 3600),
+        'path' => env('AGENT_PROTOCOL_CACHE_PATH', base_path('bootstrap/cache/adp')),
+        'compiled_filename' => env('AGENT_PROTOCOL_CACHE_FILENAME', 'metadata.json'),
+        'etag' => env('AGENT_PROTOCOL_CACHE_ETAG', true),
+        'last_modified' => env('AGENT_PROTOCOL_CACHE_LAST_MODIFIED', true),
         'vary' => [
             'headers' => array_values(array_filter(array_map(
                 'trim',
                 explode(',', env('AGENT_PROTOCOL_CACHE_VARY_HEADERS', 'Accept-Language,X-Tenant-Id'))
             ))),
         ],
+    ],
+
+    'bundle' => [
+        'enabled' => env('AGENT_PROTOCOL_BUNDLE_ENABLED', true),
+        'default_mode' => env('AGENT_PROTOCOL_BUNDLE_DEFAULT_MODE', 'full'), // full|slim
     ],
 
     'discovery' => [
@@ -40,6 +50,43 @@ return [
             'Ronu\\RestGenericClass\\Core\\Controllers\\RestController',
         ],
         'resource_key_strategy' => 'module_model',
+    ],
+
+    'schema_discovery' => [
+        'enabled' => env('AGENT_PROTOCOL_SCHEMA_DISCOVERY_ENABLED', true),
+        'config_path' => env('AGENT_PROTOCOL_SCHEMA_CONFIG_PATH', config_path('agent-protocol/schemas')),
+        'default_connection' => env('AGENT_PROTOCOL_SCHEMA_CONNECTION', env('DB_CONNECTION')),
+        'include_views' => env('AGENT_PROTOCOL_SCHEMA_INCLUDE_VIEWS', true),
+        'estimate_rows' => env('AGENT_PROTOCOL_SCHEMA_ESTIMATE_ROWS', false),
+        'include_tables' => [],
+        'exclude_tables' => [
+            'migrations',
+            'jobs',
+            'failed_jobs',
+            'password_reset_tokens',
+            'sessions',
+            'cache',
+            'cache_locks',
+        ],
+        'cacheable_row_limit' => (int) env('AGENT_PROTOCOL_SCHEMA_CACHEABLE_ROW_LIMIT', 100),
+        'cacheable_name_patterns' => [
+            '*_type',
+            '*_types',
+            '*_status',
+            '*_statuses',
+            '*_category',
+            '*_categories',
+            '*_catalog',
+            '*_catalogs',
+        ],
+        'sensitive_column_patterns' => [
+            'password',
+            'password_*',
+            '*token*',
+            '*secret*',
+            '*recovery*',
+            '*remember*',
+        ],
     ],
 
     'security' => [
@@ -84,17 +131,58 @@ return [
     |     'module' => 'security',
     |     'model' => App\\Models\\User::class,
     |     'request' => App\\Http\\Requests\\UserRequest::class,
-    |     'endpoint' => '/api/security/users',
-    |     'description' => 'Users managed by the security module.',
-    | ],
+     |     'endpoint' => '/api/security/users',
+     |     'description' => 'Users managed by the security module.',
+     |     'fields' => [
+     |         'status' => [
+     |             'label' => 'User status',
+     |             'description' => 'Lifecycle state used to filter active or inactive users.',
+     |             'type' => 'enum',
+     |             'enum_values' => [
+     |                 ['value' => 'active', 'label' => 'Active', 'description' => 'Can access the system.'],
+     |                 ['value' => 'inactive', 'label' => 'Inactive', 'description' => 'Cannot access the system.'],
+     |             ],
+     |         ],
+     |     ],
+     | ],
     */
     'resources' => [],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Reference tables
+    |--------------------------------------------------------------------------
+    |
+    | Small lookup tables can be embedded into field reference metadata so LLMs
+    | can resolve natural names to identifiers without an extra API call. Large
+    | tables publish only schema and a hint to query the referenced resource.
+    |
+    | 'departments' => [
+    |     'model' => App\\Models\\Department::class,
+    |     'resource' => 'hr.department',
+    |     'fields' => ['id', 'name'],
+    |     'lookup_field' => 'name',
+    |     'foreign_keys' => ['department_id'],
+    |     'max_records' => 100,
+    |     'cache_ttl' => 3600,
+    | ],
+    */
+    'reference_tables' => [],
+
     'dictionary' => [
+        'enabled' => env('AGENT_PROTOCOL_DICTIONARY_ENABLED', true),
+        'purpose' => 'business_glossary',
         'active' => ['field' => 'status', 'operator' => '=', 'value' => 'active'],
         'inactive' => ['field' => 'status', 'operator' => '=', 'value' => 'inactive'],
         'created between' => ['parameter' => 'oper', 'operator' => 'between'],
         'with relation' => ['parameter' => 'relations'],
+    ],
+
+    'mcp' => [
+        'annotations' => [
+            'open_world_default' => false,
+            'overrides' => [],
+        ],
     ],
 
     'documentation' => [

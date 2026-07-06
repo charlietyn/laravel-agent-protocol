@@ -12,6 +12,10 @@ Configured exporters:
 | `markdown` | `MarkdownMetadataExporter` | Human documentation. |
 | `mcp` | `McpManifestExporter` | MCP-style resources/tools manifest. |
 
+The MCP exporter emits standard tool annotations (`readOnlyHint`,
+`destructiveHint`, `idempotentHint`, `openWorldHint`) and keeps ADP-specific
+risk and confirmation metadata under `x-adp`.
+
 Usage:
 
 ```bash

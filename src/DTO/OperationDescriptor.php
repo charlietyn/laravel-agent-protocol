@@ -18,6 +18,7 @@ final readonly class OperationDescriptor implements JsonSerializable
      * @param  array<string, mixed>  $security
      * @param  array<int, array<string, mixed>>  $examples
      * @param  array<string, mixed>  $sideEffects
+     * @param  array<string, mixed>  $annotations
      */
     public function __construct(
         public string $scenario,
@@ -35,6 +36,7 @@ final readonly class OperationDescriptor implements JsonSerializable
         public array $security = [],
         public array $examples = [],
         public array $sideEffects = [],
+        public array $annotations = [],
     ) {}
 
     /**
@@ -58,6 +60,7 @@ final readonly class OperationDescriptor implements JsonSerializable
             'security' => $this->security,
             'examples' => $this->examples,
             'side_effects' => $this->sideEffects,
+            'annotations' => $this->annotations,
         ]);
     }
 

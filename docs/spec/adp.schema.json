@@ -1,0 +1,155 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ronu.dev/schemas/adp.schema.json",
+  "title": "Agent Discovery Protocol",
+  "type": "object",
+  "required": ["protocol", "protocol_version", "generated_at", "resources"],
+  "properties": {
+    "protocol": { "const": "adp" },
+    "protocol_version": { "type": "string" },
+    "generated_at": { "type": "string", "format": "date-time" },
+    "implementation": { "type": "object" },
+    "capabilities": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "links": { "type": "object" },
+    "modules": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/module" }
+    },
+    "resources": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/resource" }
+    },
+    "documentation": {
+      "type": "array",
+      "items": { "type": "object" }
+    },
+    "filter": { "type": ["object", "null"] },
+    "dictionary": { "type": "object" }
+  },
+  "$defs": {
+    "module": {
+      "type": "object",
+      "required": ["key", "name", "resources"],
+      "properties": {
+        "key": { "type": "string" },
+        "name": { "type": "string" },
+        "description": { "type": ["string", "null"] },
+        "resources": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "resource": {
+      "type": "object",
+      "required": ["key", "module", "name", "fields", "relations", "operations"],
+      "properties": {
+        "key": { "type": "string" },
+        "module": { "type": "string" },
+        "name": { "type": "string" },
+        "endpoint": { "type": ["string", "null"] },
+        "description": { "type": ["string", "null"] },
+        "fields": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/field" }
+        },
+        "relations": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/relation" }
+        },
+        "operations": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/operation" }
+        },
+        "capabilities": { "type": ["object", "null"] },
+        "security": { "type": "object" },
+        "readiness": { "type": "object" },
+        "meta": { "type": "object" }
+      }
+    },
+    "field": {
+      "type": "object",
+      "required": ["name", "type"],
+      "properties": {
+        "name": { "type": "string" },
+        "type": { "type": "string" },
+        "label": { "type": ["string", "null"] },
+        "description": { "type": ["string", "null"] },
+        "enum_values": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/enumValue" }
+        },
+        "reference": { "$ref": "#/$defs/reference" },
+        "validation_rules": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "enumValue": {
+      "type": "object",
+      "required": ["value", "label"],
+      "properties": {
+        "value": { "type": ["string", "number", "integer", "boolean"] },
+        "label": { "type": "string" },
+        "description": { "type": ["string", "null"] }
+      }
+    },
+    "reference": {
+      "type": "object",
+      "properties": {
+        "resource": { "type": "string" },
+        "lookup_field": { "type": "string" },
+        "display_fields": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "inline_values": {
+          "type": "array",
+          "items": { "type": "object" }
+        },
+        "complete": { "type": "boolean" },
+        "max_records": { "type": "integer" },
+        "hint": { "type": ["string", "null"] }
+      }
+    },
+    "relation": {
+      "type": "object",
+      "required": ["name", "type", "allowed"],
+      "properties": {
+        "name": { "type": "string" },
+        "type": { "type": "string" },
+        "related_resource": { "type": ["string", "null"] },
+        "allowed": { "type": "boolean" },
+        "selectable_fields": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "operation": {
+      "type": "object",
+      "required": ["scenario", "method", "endpoint", "description", "risk"],
+      "properties": {
+        "scenario": { "type": "string" },
+        "method": { "type": "string" },
+        "endpoint": { "type": "string" },
+        "description": { "type": "string" },
+        "validation": { "type": ["object", "null"] },
+        "risk": {
+          "type": "string",
+          "enum": ["low", "medium", "high", "critical"]
+        },
+        "requires_confirmation": { "type": "boolean" },
+        "permissions": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "annotations": { "type": "object" }
+      }
+    }
+  }
+}

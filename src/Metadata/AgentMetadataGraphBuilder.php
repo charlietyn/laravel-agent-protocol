@@ -56,6 +56,16 @@ final class AgentMetadataGraphBuilder
         return $this->resources[$key] ?? null;
     }
 
+    /**
+     * @return array<int, ResourceDescriptor>
+     */
+    public function resources(): array
+    {
+        ksort($this->resources);
+
+        return array_values($this->resources);
+    }
+
     public function setFilterDocumentation(FilterDescriptor $filter): void
     {
         $this->filterDocumentation = $filter;

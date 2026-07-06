@@ -53,6 +53,8 @@ Route discovery can also detect controllers extending
 
 ```text
 GET /agent
+GET /agent/bundle?mode=full
+GET /agent/bundle?mode=slim
 GET /agent/modules
 GET /agent/resources
 GET /agent/resources/{resource}
@@ -66,6 +68,10 @@ GET /agent/dictionary
 Each resource includes fields, relations, operations, capabilities, filters,
 security metadata and a readiness score. Each operation includes method,
 endpoint, validation, risk and whether human confirmation is required.
+
+Fields can include `label`, `description`, `enum_values` and `reference`
+metadata so LLMs infer intent from backend-published structure instead of a
+hand-maintained synonym dictionary.
 
 ## Security Defaults
 
@@ -90,7 +96,12 @@ vary by configured headers such as `Accept-Language` and `X-Tenant-Id`.
 ```bash
 php artisan agent:cache
 php artisan agent:clear
+php artisan agent:cache --tenant=7
+php artisan agent:clear --tenant=7
 ```
+
+Set `AGENT_PROTOCOL_CACHE_DRIVER=compiled_file` to store metadata as a dedicated
+compiled JSON file under `bootstrap/cache/adp`.
 
 ## CLI
 
@@ -134,6 +145,7 @@ limits.
 
 - [Install](docs/INSTALL.md)
 - [Quickstart](docs/QUICKSTART.md)
+- [Advanced Usage Guide](docs/GUIA_AVANZADA.md)
 - [Protocol](docs/PROTOCOL.md)
 - [Endpoints](docs/ENDPOINTS.md)
 - [Cache](docs/CACHE.md)
@@ -143,3 +155,8 @@ limits.
 - [Exporters](docs/EXPORTERS.md)
 - [Generated Docs](docs/GENERATED_DOCS.md)
 - [MCP and n8n](docs/MCP_N8N.md)
+- [Schema Discovery](docs/SCHEMA_DISCOVERY.md)
+- [ADP Spec](docs/spec/ADP.md)
+- [End-To-End Example](docs/END_TO_END.md)
+- [Migration](docs/MIGRATION.md)
+- [Success Metrics](docs/METRICS.md)

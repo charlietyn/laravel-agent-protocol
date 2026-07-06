@@ -16,6 +16,20 @@ server or n8n node package.
 Tool names must be deterministic: `{operation}_{resource}` normalized to
 letters, numbers and underscores.
 
+MCP exports include standard tool annotations:
+
+| ADP operation | `readOnlyHint` | `destructiveHint` | `idempotentHint` |
+|---|---:|---:|---:|
+| `query`, `show` | true | false | true |
+| `create` | false | false | false |
+| `update` | false | false | true |
+| `delete`, `force_delete` | false | true | true |
+| `bulk_update` | false | true | false |
+| `restore` | false | false | true |
+
+ADP-specific metadata is exported under `x-adp`, including risk level,
+confirmation, permissions, side effects and source URI.
+
 ## n8n Mapping
 
 n8n nodes should use ADP discovery to populate dynamic options:
@@ -29,3 +43,10 @@ n8n nodes should use ADP discovery to populate dynamic options:
 
 Credentials, tenant headers and locale headers belong in n8n credentials or node
 configuration, not in prompts.
+
+n8n should load `/agent/bundle?mode=full` for first discovery, cache the result
+in workflow or node state, and prefer `/agent/bundle?mode=slim` once lookup
+values are already cached.
+
+For complete MCP/n8n flows, risk handling and cache strategy, see
+[Guia Avanzada De Uso E Integracion](GUIA_AVANZADA.md).

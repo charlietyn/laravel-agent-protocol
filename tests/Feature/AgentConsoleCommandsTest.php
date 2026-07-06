@@ -39,4 +39,22 @@ final class AgentConsoleCommandsTest extends TestCase
 
         File::deleteDirectory($path);
     }
+
+    public function test_cache_command_can_write_compiled_file_cache(): void
+    {
+        $path = sys_get_temp_dir().DIRECTORY_SEPARATOR.'adp-cache-'.bin2hex(random_bytes(4));
+
+        config()->set('agent-protocol.cache.driver', 'compiled_file');
+        config()->set('agent-protocol.cache.path', $path);
+        config()->set('agent-protocol.cache.compiled_filename', 'metadata.json');
+
+        $this->artisan('agent:cache')->assertExitCode(0);
+
+        self::assertFileExists($path.DIRECTORY_SEPARATOR.'metadata.json');
+        self::assertStringContainsString('security.fake-user', (string) File::get($path.DIRECTORY_SEPARATOR.'metadata.json'));
+
+        $this->getJson('/agent/bundle')->assertOk()->assertJsonPath('resources.0.key', 'security.fake-user');
+
+        File::deleteDirectory($path);
+    }
 }

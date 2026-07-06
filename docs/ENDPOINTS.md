@@ -6,6 +6,18 @@ Returns the full `AgentMetadataGraph`, including protocol version,
 implementation metadata, capabilities, links, modules, resources, filter
 documentation and dictionary.
 
+## `GET /agent/bundle?mode=full|slim`
+
+Returns the full graph with a `bundle.mode` marker. `full` includes inline
+reference values. `slim` removes `reference.inline_values` and keeps the lookup
+schema and hints.
+
+Bundle responses include `ETag` and `Last-Modified` headers for consumer cache
+revalidation.
+
+See [Guia Avanzada De Uso E Integracion](GUIA_AVANZADA.md) for when to use
+`full` versus `slim`.
+
 ## `GET /agent/modules`
 
 Returns all module descriptors.
@@ -42,4 +54,4 @@ Returns ADP error documentation configured in `agent-protocol.documentation`.
 
 ## `GET /agent/dictionary`
 
-Returns semantic aliases from dictionary providers.
+Returns optional business glossary entries from dictionary providers.

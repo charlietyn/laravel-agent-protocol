@@ -24,6 +24,43 @@ final class AgentEndpointsTest extends TestCase
         self::assertNotContains('password', $fields);
     }
 
+    public function test_resource_endpoint_exposes_semantic_field_metadata_and_references(): void
+    {
+        $response = $this->getJson('/agent/resources/security.fake-user');
+
+        $response->assertOk();
+
+        $status = collect($response->json('fields'))->firstWhere('name', 'status');
+        $parent = collect($response->json('fields'))->firstWhere('name', 'parent_id');
+
+        self::assertSame('User status', $status['label']);
+        self::assertSame('enum', $status['type']);
+        self::assertSame('active', $status['enum_values'][0]['value']);
+        self::assertSame('security.fake-user', $parent['reference']['resource']);
+        self::assertTrue($parent['reference']['complete']);
+        self::assertSame('Root User', $parent['reference']['inline_values'][0]['name']);
+    }
+
+    public function test_bundle_endpoint_supports_full_and_slim_modes(): void
+    {
+        $full = $this->getJson('/agent/bundle?mode=full');
+        $slim = $this->getJson('/agent/bundle?mode=slim');
+
+        $full->assertOk()
+            ->assertJsonPath('bundle.mode', 'full')
+            ->assertHeader('ETag');
+
+        $slim->assertOk()
+            ->assertJsonPath('bundle.mode', 'slim')
+            ->assertHeader('Last-Modified');
+
+        $fullParent = collect($full->json('resources.0.fields'))->firstWhere('name', 'parent_id');
+        $slimParent = collect($slim->json('resources.0.fields'))->firstWhere('name', 'parent_id');
+
+        self::assertArrayHasKey('inline_values', $fullParent['reference']);
+        self::assertArrayNotHasKey('inline_values', $slimParent['reference']);
+    }
+
     public function test_operation_endpoint_exposes_risk_and_confirmation(): void
     {
         $response = $this->getJson('/agent/resources/security.fake-user/operations/delete');
