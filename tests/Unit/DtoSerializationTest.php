@@ -34,8 +34,10 @@ final class DtoSerializationTest extends TestCase
                             endpoint: '/api/security/users',
                             description: 'Query users.',
                             capabilities: new CapabilityDescriptor(query: true),
+                            risk: 'low',
                         ),
                     ],
+                    readiness: ['score' => 70, 'status' => 'partially_ready'],
                 ),
             ],
         );
@@ -46,5 +48,7 @@ final class DtoSerializationTest extends TestCase
         self::assertSame('1.0', $payload['protocol_version']);
         self::assertSame('security.user', $payload['resources'][0]['key']);
         self::assertSame('email', $payload['resources'][0]['fields'][0]['name']);
+        self::assertSame('low', $payload['resources'][0]['operations'][0]['risk']);
+        self::assertSame(70, $payload['resources'][0]['readiness']['score']);
     }
 }

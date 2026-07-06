@@ -16,7 +16,7 @@ final class RelationInspector
     /**
      * @return array<int, RelationDescriptor>
      */
-    public function inspect(?string $modelClass): array
+    public function inspect(?string $modelClass, ?int $maxDepth = null): array
     {
         if (! $modelClass || ! class_exists($modelClass) || ! is_subclass_of($modelClass, Model::class)) {
             return [];
@@ -29,7 +29,7 @@ final class RelationInspector
 
         foreach ($relationNames as $name) {
             if (! method_exists($model, $name)) {
-                $relations[] = new RelationDescriptor(name: $name, type: 'configured');
+                $relations[] = new RelationDescriptor(name: $name, type: 'configured', maxDepth: $maxDepth);
 
                 continue;
             }
@@ -37,7 +37,7 @@ final class RelationInspector
             try {
                 $relation = $model->{$name}();
             } catch (\Throwable) {
-                $relations[] = new RelationDescriptor(name: $name, type: 'configured');
+                $relations[] = new RelationDescriptor(name: $name, type: 'configured', maxDepth: $maxDepth);
 
                 continue;
             }
@@ -46,7 +46,7 @@ final class RelationInspector
                 continue;
             }
 
-            $relations[] = $this->describe($name, $relation);
+            $relations[] = $this->describe($name, $relation, $maxDepth);
         }
 
         return $relations;
@@ -69,7 +69,7 @@ final class RelationInspector
     /**
      * @param  Relation<Model, Model, mixed>  $relation
      */
-    private function describe(string $name, Relation $relation): RelationDescriptor
+    private function describe(string $name, Relation $relation, ?int $maxDepth): RelationDescriptor
     {
         $type = Str::of(class_basename($relation))->snake()->replace('_', '-')->toString();
         $related = $relation->getRelated();
@@ -89,6 +89,7 @@ final class RelationInspector
             foreignKey: $foreignKey,
             ownerKey: $ownerKey,
             localKey: $localKey,
+            maxDepth: $maxDepth,
         );
     }
 }

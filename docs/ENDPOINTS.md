@@ -2,7 +2,9 @@
 
 ## `GET /agent`
 
-Returns the full `AgentMetadataGraph`.
+Returns the full `AgentMetadataGraph`, including protocol version,
+implementation metadata, capabilities, links, modules, resources, filter
+documentation and dictionary.
 
 ## `GET /agent/modules`
 
@@ -15,6 +17,8 @@ Returns all resource descriptors.
 ## `GET /agent/resources/{resource}`
 
 Returns one resource descriptor by key, for example `security.user`.
+The descriptor includes fields, relations, operations, filters, security
+metadata, readiness and capabilities.
 
 ## `GET /agent/resources/{resource}/operations`
 
@@ -23,10 +27,14 @@ Returns all operation descriptors for a resource.
 ## `GET /agent/resources/{resource}/operations/{scenario}`
 
 Returns a single operation descriptor for one scenario.
+The descriptor includes validation, risk, permissions and
+`requires_confirmation`.
 
 ## `GET /agent/documentation/filter`
 
 Returns the `rest-generic-class` query grammar metadata.
+This includes operators, parameters, condition format, examples and operational
+limits such as `max_depth` and `max_conditions`.
 
 ## `GET /agent/documentation/errors`
 

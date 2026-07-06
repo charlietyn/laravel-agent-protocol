@@ -13,6 +13,7 @@ final readonly class FieldDescriptor implements JsonSerializable
 
     /**
      * @param  array<int, string>  $validationRules
+     * @param  array<int, string>  $operators
      */
     public function __construct(
         public string $name,
@@ -21,6 +22,11 @@ final readonly class FieldDescriptor implements JsonSerializable
         public bool $fillable = false,
         public ?string $cast = null,
         public array $validationRules = [],
+        public bool $filterable = true,
+        public bool $selectable = true,
+        public bool $sensitive = false,
+        public bool $visible = true,
+        public array $operators = [],
     ) {}
 
     /**
@@ -35,6 +41,11 @@ final readonly class FieldDescriptor implements JsonSerializable
             'fillable' => $this->fillable,
             'cast' => $this->cast,
             'validation_rules' => $this->validationRules,
+            'filterable' => $this->filterable,
+            'selectable' => $this->selectable,
+            'sensitive' => $this->sensitive,
+            'visible' => $this->visible,
+            'operators' => $this->operators,
         ]);
     }
 

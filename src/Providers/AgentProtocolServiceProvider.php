@@ -8,6 +8,8 @@ use Illuminate\Support\ServiceProvider;
 use Ronu\LaravelAgentProtocol\Cache\MetadataRepository;
 use Ronu\LaravelAgentProtocol\Console\Commands\AgentCacheCommand;
 use Ronu\LaravelAgentProtocol\Console\Commands\AgentClearCommand;
+use Ronu\LaravelAgentProtocol\Console\Commands\AgentDiscoverCommand;
+use Ronu\LaravelAgentProtocol\Console\Commands\AgentDocsCommand;
 use Ronu\LaravelAgentProtocol\Console\Commands\AgentExportCommand;
 use Ronu\LaravelAgentProtocol\Console\Commands\AgentValidateCommand;
 use Ronu\LaravelAgentProtocol\Contracts\MetadataCompilerContract;
@@ -79,6 +81,8 @@ final class AgentProtocolServiceProvider extends ServiceProvider
             $this->commands([
                 AgentCacheCommand::class,
                 AgentClearCommand::class,
+                AgentDiscoverCommand::class,
+                AgentDocsCommand::class,
                 AgentValidateCommand::class,
                 AgentExportCommand::class,
             ]);

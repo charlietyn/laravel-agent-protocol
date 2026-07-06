@@ -51,4 +51,32 @@ final class ProtocolValidatorTest extends TestCase
 
         self::assertNotSame([], (new ProtocolValidator)->validate($graph));
     }
+
+    public function test_validator_reports_high_risk_operations_without_confirmation(): void
+    {
+        $graph = new AgentMetadataGraph(
+            protocolVersion: '1.0',
+            generatedAt: new DateTimeImmutable,
+            modules: [new ModuleDescriptor('security', 'security', resources: ['security.user'])],
+            resources: [
+                new ResourceDescriptor(
+                    key: 'security.user',
+                    module: 'security',
+                    name: 'user',
+                    operations: [
+                        new OperationDescriptor(
+                            scenario: 'delete',
+                            method: 'DELETE',
+                            endpoint: '/api/security/users/{id}',
+                            description: 'Delete users.',
+                            risk: 'high',
+                            requiresConfirmation: false,
+                        ),
+                    ],
+                ),
+            ],
+        );
+
+        self::assertNotSame([], (new ProtocolValidator)->validate($graph));
+    }
 }

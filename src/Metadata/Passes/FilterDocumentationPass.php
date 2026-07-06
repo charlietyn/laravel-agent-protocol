@@ -24,6 +24,10 @@ final class FilterDocumentationPass implements MetadataCompilerPass
             'date', 'not date',
         ]);
         $operators = array_values(array_filter($configuredOperators, is_string(...)));
+        $maxDepth = $context->config('agent-protocol.limits.max_depth')
+            ?? $context->config('rest-generic-class.filtering.max_depth', 5);
+        $maxConditions = $context->config('agent-protocol.limits.max_conditions')
+            ?? $context->config('rest-generic-class.filtering.max_conditions', 100);
 
         $builder->setFilterDocumentation(new FilterDescriptor(
             operators: $operators,
@@ -59,6 +63,13 @@ final class FilterDocumentationPass implements MetadataCompilerPass
                     ],
                 ],
             ],
+            limits: [
+                'max_depth' => is_numeric($maxDepth) ? (int) $maxDepth : 5,
+                'max_conditions' => is_numeric($maxConditions) ? (int) $maxConditions : 100,
+            ],
+            strictRelations: (bool) $context->config('rest-generic-class.filtering.strict_relations', true),
+            validateColumns: (bool) $context->config('rest-generic-class.filtering.validate_columns', true),
+            strictColumnValidation: (bool) $context->config('rest-generic-class.filtering.strict_column_validation', true),
         ));
     }
 }

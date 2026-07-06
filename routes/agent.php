@@ -16,13 +16,14 @@ Route::prefix($prefix)
         Route::get('/modules', [AgentController::class, 'modules'])->name('modules');
         Route::get('/resources', [AgentController::class, 'resources'])->name('resources');
         Route::get('/resources/{resource}/operations', [AgentController::class, 'operations'])
-            ->where('resource', '.*')
+            ->where('resource', '[A-Za-z0-9_.:-]+')
             ->name('resources.operations');
         Route::get('/resources/{resource}/operations/{scenario}', [AgentController::class, 'operation'])
-            ->where('resource', '.*')
+            ->where('resource', '[A-Za-z0-9_.:-]+')
+            ->where('scenario', '[A-Za-z0-9_.:-]+')
             ->name('resources.operations.show');
         Route::get('/resources/{resource}', [AgentController::class, 'resource'])
-            ->where('resource', '.*')
+            ->where('resource', '[A-Za-z0-9_.:-]+')
             ->name('resources.show');
         Route::get('/documentation/filter', [AgentController::class, 'filterDocumentation'])->name('documentation.filter');
         Route::get('/documentation/errors', [AgentController::class, 'errorDocumentation'])->name('documentation.errors');

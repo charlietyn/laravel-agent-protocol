@@ -11,14 +11,21 @@ compiles and stores it. `refresh()` always recompiles and updates the cache.
     'store' => env('CACHE_STORE'),
     'key' => 'agent-protocol:metadata:v1',
     'ttl' => 3600,
+    'vary' => [
+        'headers' => ['Accept-Language', 'X-Tenant-Id'],
+    ],
 ],
 ```
+
+When configured, cache keys include a stable hash of the selected request
+headers. This supports metadata that varies by tenant or locale.
 
 ## Commands
 
 ```bash
 php artisan agent:cache
 php artisan agent:clear
+php artisan agent:discover
 ```
 
 ## Recommendation

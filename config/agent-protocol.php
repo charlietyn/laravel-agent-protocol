@@ -3,6 +3,9 @@
 declare(strict_types=1);
 
 use Ronu\LaravelAgentProtocol\Exporters\JsonMetadataExporter;
+use Ronu\LaravelAgentProtocol\Exporters\JsonSchemaMetadataExporter;
+use Ronu\LaravelAgentProtocol\Exporters\MarkdownMetadataExporter;
+use Ronu\LaravelAgentProtocol\Exporters\McpManifestExporter;
 
 return [
     'protocol_version' => '1.0',
@@ -21,6 +24,12 @@ return [
         'store' => env('AGENT_PROTOCOL_CACHE_STORE', env('CACHE_STORE')),
         'key' => env('AGENT_PROTOCOL_CACHE_KEY', 'agent-protocol:metadata:v1'),
         'ttl' => (int) env('AGENT_PROTOCOL_CACHE_TTL', 3600),
+        'vary' => [
+            'headers' => array_values(array_filter(array_map(
+                'trim',
+                explode(',', env('AGENT_PROTOCOL_CACHE_VARY_HEADERS', 'Accept-Language,X-Tenant-Id'))
+            ))),
+        ],
     ],
 
     'discovery' => [
@@ -31,6 +40,35 @@ return [
             'Ronu\\RestGenericClass\\Core\\Controllers\\RestController',
         ],
         'resource_key_strategy' => 'module_model',
+    ],
+
+    'security' => [
+        'redact_sensitive_fields' => env('AGENT_PROTOCOL_REDACT_SENSITIVE_FIELDS', true),
+        'expose_sensitive_fields' => env('AGENT_PROTOCOL_EXPOSE_SENSITIVE_FIELDS', false),
+        'sensitive_fields' => [
+            'password',
+            'password_confirmation',
+            'current_password',
+            'new_password',
+            'remember_token',
+            'api_token',
+            'access_token',
+            'refresh_token',
+            'secret',
+            'two_factor_secret',
+            'two_factor_recovery_codes',
+        ],
+        'hidden_fields' => [],
+        'public_fields' => [],
+        'tenant_header' => env('AGENT_PROTOCOL_TENANT_HEADER', 'X-Tenant-Id'),
+        'locale_header' => env('AGENT_PROTOCOL_LOCALE_HEADER', 'Accept-Language'),
+        'default_risk' => 'medium',
+        'confirmation_required_for' => ['high', 'critical'],
+    ],
+
+    'limits' => [
+        'max_depth' => env('AGENT_PROTOCOL_MAX_DEPTH'),
+        'max_conditions' => env('AGENT_PROTOCOL_MAX_CONDITIONS'),
     ],
 
     /*
@@ -76,6 +114,36 @@ return [
                 'status' => 422,
                 'message' => 'The compiled metadata graph violates the Agent Discovery Protocol contract.',
             ],
+            [
+                'code' => 'ADP_INVALID_RELATION',
+                'status' => 400,
+                'message' => 'The requested relation is not published as an allowed ADP relation.',
+            ],
+            [
+                'code' => 'ADP_INVALID_OPERATOR',
+                'status' => 400,
+                'message' => 'The requested filter operator is not allowed by the ADP filter contract.',
+            ],
+            [
+                'code' => 'ADP_FILTER_TOO_DEEP',
+                'status' => 400,
+                'message' => 'The requested filter or orderby relation depth exceeds the published max_depth limit.',
+            ],
+            [
+                'code' => 'ADP_TOO_MANY_CONDITIONS',
+                'status' => 400,
+                'message' => 'The requested filter exceeds the published max_conditions limit.',
+            ],
+            [
+                'code' => 'ADP_UNAUTHORIZED_METADATA',
+                'status' => 401,
+                'message' => 'The caller is not authenticated for this metadata context.',
+            ],
+            [
+                'code' => 'ADP_FORBIDDEN_OPERATION',
+                'status' => 403,
+                'message' => 'The caller is not allowed to execute or inspect this ADP operation.',
+            ],
         ],
     ],
 
@@ -87,5 +155,8 @@ return [
 
     'exporters' => [
         'json' => JsonMetadataExporter::class,
+        'json-schema' => JsonSchemaMetadataExporter::class,
+        'markdown' => MarkdownMetadataExporter::class,
+        'mcp' => McpManifestExporter::class,
     ],
 ];

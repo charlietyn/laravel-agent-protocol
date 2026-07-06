@@ -13,10 +13,14 @@ final readonly class ValidationDescriptor implements JsonSerializable
 
     /**
      * @param  array<string, array<int, string>>  $rules
+     * @param  array<string, string>  $messages
+     * @param  array<string, mixed>  $authorization
      */
     public function __construct(
         public string $scenario,
         public array $rules = [],
+        public array $messages = [],
+        public array $authorization = [],
     ) {}
 
     /**
@@ -27,6 +31,8 @@ final readonly class ValidationDescriptor implements JsonSerializable
         return $this->serializeValues([
             'scenario' => $this->scenario,
             'rules' => $this->rules,
+            'messages' => $this->messages,
+            'authorization' => $this->authorization,
         ]);
     }
 

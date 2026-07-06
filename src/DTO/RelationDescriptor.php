@@ -11,6 +11,9 @@ final readonly class RelationDescriptor implements JsonSerializable
 {
     use SerializesDescriptor;
 
+    /**
+     * @param  array<int, string>  $selectableFields
+     */
     public function __construct(
         public string $name,
         public string $type,
@@ -19,6 +22,9 @@ final readonly class RelationDescriptor implements JsonSerializable
         public ?string $foreignKey = null,
         public ?string $ownerKey = null,
         public ?string $localKey = null,
+        public bool $allowed = true,
+        public ?int $maxDepth = null,
+        public array $selectableFields = [],
     ) {}
 
     /**
@@ -34,6 +40,9 @@ final readonly class RelationDescriptor implements JsonSerializable
             'foreign_key' => $this->foreignKey,
             'owner_key' => $this->ownerKey,
             'local_key' => $this->localKey,
+            'allowed' => $this->allowed,
+            'max_depth' => $this->maxDepth,
+            'selectable_fields' => $this->selectableFields,
         ]);
     }
 

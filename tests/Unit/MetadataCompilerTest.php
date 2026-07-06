@@ -36,7 +36,27 @@ final class MetadataCompilerTest extends TestCase
                         'model' => FakeModel::class,
                         'request' => FakeRequest::class,
                         'endpoint' => '/api/security/fake-users',
+                        'operations' => [
+                            'delete' => [
+                                'method' => 'DELETE',
+                                'endpoint' => '/api/security/fake-users/{id}',
+                            ],
+                        ],
                     ],
+                ],
+                'security' => [
+                    'redact_sensitive_fields' => true,
+                    'expose_sensitive_fields' => false,
+                    'sensitive_fields' => ['password'],
+                    'hidden_fields' => [],
+                    'public_fields' => [],
+                    'tenant_header' => 'X-Tenant-Id',
+                    'locale_header' => 'Accept-Language',
+                ],
+            ],
+            'rest-generic-class' => [
+                'filtering' => [
+                    'max_depth' => 4,
                 ],
             ],
         ]);
@@ -62,5 +82,13 @@ final class MetadataCompilerTest extends TestCase
         self::assertTrue($resource->capabilities?->create);
         self::assertTrue($resource->capabilities?->update);
         self::assertTrue($resource->capabilities?->hierarchy);
+        self::assertSame('agent_ready', $resource->readiness['status']);
+        self::assertNotContains('password', array_map(fn ($field): string => $field->name, $resource->fields));
+
+        $delete = $resource->operation('delete');
+
+        self::assertNotNull($delete);
+        self::assertSame('high', $delete->risk);
+        self::assertTrue($delete->requiresConfirmation);
     }
 }

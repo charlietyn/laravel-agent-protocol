@@ -15,12 +15,17 @@ final readonly class FilterDescriptor implements JsonSerializable
      * @param  array<int, string>  $operators
      * @param  array<string, mixed>  $parameters
      * @param  array<int, array<string, mixed>>  $examples
+     * @param  array<string, mixed>  $limits
      */
     public function __construct(
         public array $operators,
         public array $parameters,
         public string $conditionFormat,
         public array $examples = [],
+        public array $limits = [],
+        public bool $strictRelations = true,
+        public bool $validateColumns = true,
+        public bool $strictColumnValidation = true,
     ) {}
 
     /**
@@ -33,6 +38,10 @@ final readonly class FilterDescriptor implements JsonSerializable
             'parameters' => $this->parameters,
             'condition_format' => $this->conditionFormat,
             'examples' => $this->examples,
+            'limits' => $this->limits,
+            'strict_relations' => $this->strictRelations,
+            'validate_columns' => $this->validateColumns,
+            'strict_column_validation' => $this->strictColumnValidation,
         ]);
     }
 

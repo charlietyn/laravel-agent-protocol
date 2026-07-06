@@ -16,6 +16,7 @@ use Ronu\LaravelAgentProtocol\Metadata\Introspection\RelationInspector;
 use Ronu\LaravelAgentProtocol\Metadata\Introspection\ValidationInspector;
 use Ronu\LaravelAgentProtocol\Metadata\MetadataBuildContext;
 use Ronu\LaravelAgentProtocol\Metadata\OperationFactory;
+use Ronu\LaravelAgentProtocol\Metadata\Readiness\ReadinessScorer;
 use Ronu\LaravelAgentProtocol\Support\ResourceKey;
 
 final readonly class ConfiguredResourcePass implements MetadataCompilerPass
@@ -29,6 +30,7 @@ final readonly class ConfiguredResourcePass implements MetadataCompilerPass
         private RelationInspector $relationInspector,
         private ValidationInspector $validationInspector,
         private OperationFactory $operationFactory,
+        private ?ReadinessScorer $readinessScorer = null,
     ) {}
 
     public function compile(MetadataBuildContext $context, AgentMetadataGraphBuilder $builder): void
@@ -81,12 +83,25 @@ final readonly class ConfiguredResourcePass implements MetadataCompilerPass
             ? $configuredKey
             : ResourceKey::fromModel($module, $modelClass, $name);
         $endpoint = $this->stringOrDefault($definition['endpoint'] ?? ('/'.str_replace('.', '/', $key)), '/'.str_replace('.', '/', $key));
+        $visibility = $this->visibility($context, $definition);
+        $security = $this->security($context, $definition, $visibility);
+        $operationDefinitions = $this->operationDefinitions($definition['operations'] ?? []);
         $validations = $this->validationInspector->inspect($requestClass);
-        $model = $this->modelInspector->inspect($modelClass, $validations);
-        $relations = $this->relationInspector->inspect($modelClass);
-        $operations = $this->operationFactory->fromValidations($validations, $endpoint);
+        $model = $this->modelInspector->inspect($modelClass, $validations, $visibility);
+        $relations = $this->relationInspector->inspect($modelClass, $this->maxDepth($context));
+        $operations = $this->operationFactory->fromValidations(
+            validations: $validations,
+            endpoint: $endpoint,
+            overrides: $operationDefinitions,
+            security: $security,
+        );
+        $definedScenarios = array_fill_keys(array_map(fn (OperationDescriptor $operation): string => $operation->scenario, $operations), true);
 
-        foreach ((array) ($definition['operations'] ?? []) as $scenario => $operationDefinition) {
+        foreach ($operationDefinitions as $scenario => $operationDefinition) {
+            if (isset($definedScenarios[$scenario])) {
+                continue;
+            }
+
             if (! is_array($operationDefinition)) {
                 continue;
             }
@@ -96,13 +111,16 @@ final readonly class ConfiguredResourcePass implements MetadataCompilerPass
                 method: $this->stringOrDefault($operationDefinition['method'] ?? 'POST', 'POST'),
                 endpoint: $this->stringOrDefault($operationDefinition['endpoint'] ?? $endpoint, $endpoint),
                 validation: $validations[(string) $scenario] ?? null,
+                security: $security,
+                overrides: $operationDefinition,
             );
         }
 
-        $builder->addResource(new ResourceDescriptor(
+        $resource = new ResourceDescriptor(
             key: $key,
             module: $module,
             name: $name,
+            endpoint: $endpoint,
             model: $modelClass,
             table: $model['table'],
             primaryKey: $model['primary_key'],
@@ -111,6 +129,10 @@ final readonly class ConfiguredResourcePass implements MetadataCompilerPass
             relations: $relations,
             operations: $operations,
             capabilities: $this->capabilities($operations, $relations, $model['meta'], $context),
+            filters: $this->filterParameters($context),
+            security: $security,
+            visibility: $visibility,
+            examples: $this->arrayList($definition['examples'] ?? []),
             meta: [
                 ...$model['meta'],
                 'source' => 'config',
@@ -118,7 +140,9 @@ final readonly class ConfiguredResourcePass implements MetadataCompilerPass
                 'controller' => $definition['controller'] ?? null,
                 'service' => $definition['service'] ?? null,
             ],
-        ));
+        );
+
+        $builder->addResource($resource->withReadiness($this->scorer()->score($resource)));
     }
 
     /**
@@ -137,6 +161,8 @@ final readonly class ConfiguredResourcePass implements MetadataCompilerPass
             relations: array_map(fn ($relation): string => $relation->name, $relations),
             hierarchy: isset($modelMeta['hierarchy_field']) && $modelMeta['hierarchy_field'] !== null,
             softDeletes: isset($modelMeta['soft_delete_column']) && $modelMeta['soft_delete_column'] !== null,
+            permissioned: $this->hasPermissionedOperation($operations),
+            risks: $this->risks($operations),
         );
 
         foreach ($operations as $operation) {
@@ -160,7 +186,7 @@ final readonly class ConfiguredResourcePass implements MetadataCompilerPass
      */
     private function filterParameters(MetadataBuildContext $context): array
     {
-        return [
+        $parameters = [
             'eq',
             'attr',
             'oper',
@@ -172,6 +198,8 @@ final readonly class ConfiguredResourcePass implements MetadataCompilerPass
             'soft_delete',
             '_nested',
         ];
+
+        return array_values(array_unique(array_filter($parameters, is_string(...))));
     }
 
     private function stringOrNull(mixed $value): ?string
@@ -182,5 +210,129 @@ final readonly class ConfiguredResourcePass implements MetadataCompilerPass
     private function stringOrDefault(mixed $value, string $default): string
     {
         return is_string($value) && $value !== '' ? $value : $default;
+    }
+
+    /**
+     * @param  array<string, mixed>  $definition
+     * @return array<string, mixed>
+     */
+    private function visibility(MetadataBuildContext $context, array $definition): array
+    {
+        return [
+            'redact_sensitive_fields' => (bool) $context->config('agent-protocol.security.redact_sensitive_fields', true),
+            'expose_sensitive_fields' => (bool) ($definition['expose_sensitive_fields']
+                ?? $context->config('agent-protocol.security.expose_sensitive_fields', false)),
+            'sensitive_fields' => array_values(array_unique([
+                ...$this->stringList($context->config('agent-protocol.security.sensitive_fields', [])),
+                ...$this->stringList($definition['sensitive_fields'] ?? []),
+            ])),
+            'hidden_fields' => array_values(array_unique([
+                ...$this->stringList($context->config('agent-protocol.security.hidden_fields', [])),
+                ...$this->stringList($definition['hidden_fields'] ?? []),
+            ])),
+            'public_fields' => array_values(array_unique([
+                ...$this->stringList($context->config('agent-protocol.security.public_fields', [])),
+                ...$this->stringList($definition['public_fields'] ?? []),
+            ])),
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $definition
+     * @param  array<string, mixed>  $visibility
+     * @return array<string, mixed>
+     */
+    private function security(MetadataBuildContext $context, array $definition, array $visibility): array
+    {
+        return [
+            'middleware' => $this->stringList($definition['middleware'] ?? $context->config('agent-protocol.routes.middleware', ['api'])),
+            'guards' => $this->stringList($definition['guards'] ?? []),
+            'permissions' => $this->stringList($definition['permissions'] ?? []),
+            'tenant_header' => $this->stringOrNull($definition['tenant_header'] ?? $context->config('agent-protocol.security.tenant_header')),
+            'locale_header' => $this->stringOrNull($definition['locale_header'] ?? $context->config('agent-protocol.security.locale_header')),
+            'tenant_aware' => (bool) ($definition['tenant_aware'] ?? false),
+            'locale_aware' => (bool) ($definition['locale_aware'] ?? false),
+            'redact_sensitive_fields' => (bool) ($visibility['redact_sensitive_fields'] ?? true),
+            'expose_sensitive_fields' => (bool) ($visibility['expose_sensitive_fields'] ?? false),
+        ];
+    }
+
+    /**
+     * @return array<string, array<string, mixed>>
+     */
+    private function operationDefinitions(mixed $operations): array
+    {
+        if (! is_array($operations)) {
+            return [];
+        }
+
+        $definitions = [];
+        foreach ($operations as $scenario => $definition) {
+            if (is_string($scenario) && is_array($definition)) {
+                $definitions[$scenario] = $definition;
+            }
+        }
+
+        return $definitions;
+    }
+
+    private function maxDepth(MetadataBuildContext $context): int
+    {
+        $depth = $context->config('agent-protocol.limits.max_depth')
+            ?? $context->config('rest-generic-class.filtering.max_depth', 5);
+
+        return is_numeric($depth) ? (int) $depth : 5;
+    }
+
+    /**
+     * @param  array<int, OperationDescriptor>  $operations
+     */
+    private function hasPermissionedOperation(array $operations): bool
+    {
+        foreach ($operations as $operation) {
+            if ($operation->permissions !== []) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @param  array<int, OperationDescriptor>  $operations
+     * @return array<int, string>
+     */
+    private function risks(array $operations): array
+    {
+        return array_values(array_unique(array_map(fn (OperationDescriptor $operation): string => $operation->risk, $operations)));
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function stringList(mixed $values): array
+    {
+        if (! is_array($values)) {
+            return [];
+        }
+
+        return array_values(array_filter($values, is_string(...)));
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function arrayList(mixed $values): array
+    {
+        if (! is_array($values)) {
+            return [];
+        }
+
+        return array_values(array_filter($values, is_array(...)));
+    }
+
+    private function scorer(): ReadinessScorer
+    {
+        return $this->readinessScorer ?? new ReadinessScorer;
     }
 }

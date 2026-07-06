@@ -20,6 +20,7 @@ use Ronu\LaravelAgentProtocol\Metadata\Introspection\RelationInspector;
 use Ronu\LaravelAgentProtocol\Metadata\Introspection\ValidationInspector;
 use Ronu\LaravelAgentProtocol\Metadata\MetadataBuildContext;
 use Ronu\LaravelAgentProtocol\Metadata\OperationFactory;
+use Ronu\LaravelAgentProtocol\Metadata\Readiness\ReadinessScorer;
 use Ronu\LaravelAgentProtocol\Support\ResourceKey;
 
 final readonly class RouteResourcePass implements MetadataCompilerPass
@@ -29,6 +30,7 @@ final readonly class RouteResourcePass implements MetadataCompilerPass
         private RelationInspector $relationInspector,
         private ValidationInspector $validationInspector,
         private OperationFactory $operationFactory,
+        private ?ReadinessScorer $readinessScorer = null,
     ) {}
 
     public function compile(MetadataBuildContext $context, AgentMetadataGraphBuilder $builder): void
@@ -51,7 +53,7 @@ final readonly class RouteResourcePass implements MetadataCompilerPass
          *     model: string,
          *     controller: string,
          *     request: string|null,
-         *     operations: array<int, array{scenario: string, method: string, endpoint: string}>
+         *     operations: array<int, array{scenario: string, method: string, endpoint: string, middleware: array<int, string>, permissions: array<int, string>}>
          * }> $grouped
          */
         $grouped = [];
@@ -77,10 +79,12 @@ final readonly class RouteResourcePass implements MetadataCompilerPass
         foreach ($grouped as $key => $definition) {
             $modelClass = $definition['model'];
             $requestClass = $definition['request'];
+            $visibility = $this->visibility($context);
             $validations = $this->validationInspector->inspect($requestClass);
-            $model = $this->modelInspector->inspect($modelClass, $validations);
-            $relations = $this->relationInspector->inspect($modelClass);
+            $model = $this->modelInspector->inspect($modelClass, $validations, $visibility);
+            $relations = $this->relationInspector->inspect($modelClass, $this->maxDepth($context));
             $operations = [];
+            $security = $this->security($context, $definition['operations']);
 
             foreach ($definition['operations'] as $operation) {
                 $operations[] = $this->operationFactory->fromRoute(
@@ -88,13 +92,19 @@ final readonly class RouteResourcePass implements MetadataCompilerPass
                     method: $operation['method'],
                     endpoint: $operation['endpoint'],
                     validation: $validations[$operation['scenario']] ?? null,
+                    security: [
+                        ...$security,
+                        'middleware' => $operation['middleware'],
+                        'permissions' => $operation['permissions'],
+                    ],
                 );
             }
 
-            $builder->addResource(new ResourceDescriptor(
+            $resource = new ResourceDescriptor(
                 key: (string) $key,
                 module: (string) $definition['module'],
                 name: (string) $definition['name'],
+                endpoint: $this->baseEndpoint($definition['operations']),
                 model: $modelClass,
                 table: $model['table'],
                 primaryKey: $model['primary_key'],
@@ -103,13 +113,18 @@ final readonly class RouteResourcePass implements MetadataCompilerPass
                 relations: $relations,
                 operations: $operations,
                 capabilities: $this->capabilities($operations, $relations, $model['meta']),
+                filters: $this->filterParameters(),
+                security: $security,
+                visibility: $visibility,
                 meta: [
                     ...$model['meta'],
                     'source' => 'routes',
                     'controller' => $definition['controller'],
                     'request' => $requestClass,
                 ],
-            ));
+            );
+
+            $builder->addResource($resource->withReadiness($this->scorer()->score($resource)));
         }
     }
 
@@ -121,7 +136,7 @@ final readonly class RouteResourcePass implements MetadataCompilerPass
      *     model: string,
      *     controller: string,
      *     request: string|null,
-     *     operation: array{scenario: string, method: string, endpoint: string}
+     *     operation: array{scenario: string, method: string, endpoint: string, middleware: array<int, string>, permissions: array<int, string>}
      * }|null
      */
     private function routeMeta(MetadataBuildContext $context, Route $route): ?array
@@ -147,6 +162,7 @@ final readonly class RouteResourcePass implements MetadataCompilerPass
         $key = ResourceKey::fromModel($module, $modelClass, $name);
         $requestClass = $this->requestClass($controllerClass, $method);
         $methodVerb = $this->primaryVerb($route->methods());
+        $middleware = $this->stringList($route->gatherMiddleware());
 
         return [
             'key' => $key,
@@ -159,6 +175,8 @@ final readonly class RouteResourcePass implements MetadataCompilerPass
                 'scenario' => $this->scenarioFromControllerMethod($method),
                 'method' => $methodVerb,
                 'endpoint' => '/'.ltrim($route->uri(), '/'),
+                'middleware' => $middleware,
+                'permissions' => $this->permissionsFromMiddleware($middleware),
             ],
         ];
     }
@@ -290,6 +308,8 @@ final readonly class RouteResourcePass implements MetadataCompilerPass
             relations: array_map(fn ($relation): string => $relation->name, $relations),
             hierarchy: isset($modelMeta['hierarchy_field']) && $modelMeta['hierarchy_field'] !== null,
             softDeletes: isset($modelMeta['soft_delete_column']) && $modelMeta['soft_delete_column'] !== null,
+            permissioned: $this->hasPermissionedOperation($operations),
+            risks: $this->risks($operations),
         );
 
         foreach ($operations as $operation) {
@@ -299,5 +319,145 @@ final readonly class RouteResourcePass implements MetadataCompilerPass
         }
 
         return $capabilities;
+    }
+
+    /**
+     * @param  array<int, array{scenario: string, method: string, endpoint: string, middleware: array<int, string>, permissions: array<int, string>}>  $operations
+     */
+    private function baseEndpoint(array $operations): ?string
+    {
+        $first = $operations[0]['endpoint'] ?? null;
+
+        if (! is_string($first) || $first === '') {
+            return null;
+        }
+
+        return preg_replace('#/\{[^}]+\}$#', '', $first) ?: $first;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function filterParameters(): array
+    {
+        return ['eq', 'attr', 'oper', 'relations', 'select', 'pagination', 'orderby', 'hierarchy', 'soft_delete', '_nested'];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function visibility(MetadataBuildContext $context): array
+    {
+        return [
+            'redact_sensitive_fields' => (bool) $context->config('agent-protocol.security.redact_sensitive_fields', true),
+            'expose_sensitive_fields' => (bool) $context->config('agent-protocol.security.expose_sensitive_fields', false),
+            'sensitive_fields' => $this->stringList($context->config('agent-protocol.security.sensitive_fields', [])),
+            'hidden_fields' => $this->stringList($context->config('agent-protocol.security.hidden_fields', [])),
+            'public_fields' => $this->stringList($context->config('agent-protocol.security.public_fields', [])),
+        ];
+    }
+
+    /**
+     * @param  array<int, array{scenario: string, method: string, endpoint: string, middleware: array<int, string>, permissions: array<int, string>}>  $operations
+     * @return array<string, mixed>
+     */
+    private function security(MetadataBuildContext $context, array $operations): array
+    {
+        $middleware = [];
+        $permissions = [];
+
+        foreach ($operations as $operation) {
+            $middleware = [...$middleware, ...$operation['middleware']];
+            $permissions = [...$permissions, ...$operation['permissions']];
+        }
+
+        return [
+            'middleware' => array_values(array_unique($middleware)),
+            'guards' => [],
+            'permissions' => array_values(array_unique($permissions)),
+            'tenant_header' => $context->config('agent-protocol.security.tenant_header', 'X-Tenant-Id'),
+            'locale_header' => $context->config('agent-protocol.security.locale_header', 'Accept-Language'),
+            'tenant_aware' => false,
+            'locale_aware' => false,
+            'redact_sensitive_fields' => (bool) $context->config('agent-protocol.security.redact_sensitive_fields', true),
+            'expose_sensitive_fields' => (bool) $context->config('agent-protocol.security.expose_sensitive_fields', false),
+        ];
+    }
+
+    private function maxDepth(MetadataBuildContext $context): int
+    {
+        $depth = $context->config('agent-protocol.limits.max_depth')
+            ?? $context->config('rest-generic-class.filtering.max_depth', 5);
+
+        return is_numeric($depth) ? (int) $depth : 5;
+    }
+
+    /**
+     * @param  array<int, OperationDescriptor>  $operations
+     */
+    private function hasPermissionedOperation(array $operations): bool
+    {
+        foreach ($operations as $operation) {
+            if ($operation->permissions !== []) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @param  array<int, OperationDescriptor>  $operations
+     * @return array<int, string>
+     */
+    private function risks(array $operations): array
+    {
+        return array_values(array_unique(array_map(fn (OperationDescriptor $operation): string => $operation->risk, $operations)));
+    }
+
+    /**
+     * @param  array<int, string>  $middleware
+     * @return array<int, string>
+     */
+    private function permissionsFromMiddleware(array $middleware): array
+    {
+        $permissions = [];
+
+        foreach ($middleware as $entry) {
+            if (! str_contains($entry, ':')) {
+                continue;
+            }
+
+            [$name, $arguments] = explode(':', $entry, 2);
+            if (! in_array($name, ['can', 'permission', 'permissions'], true)) {
+                continue;
+            }
+
+            foreach (explode(',', $arguments) as $permission) {
+                $permission = trim($permission);
+                if ($permission !== '') {
+                    $permissions[] = $permission;
+                }
+            }
+        }
+
+        return array_values(array_unique($permissions));
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function stringList(mixed $values): array
+    {
+        if (! is_array($values)) {
+            return [];
+        }
+
+        return array_values(array_filter($values, is_string(...)));
+    }
+
+    private function scorer(): ReadinessScorer
+    {
+        return $this->readinessScorer ?? new ReadinessScorer;
     }
 }

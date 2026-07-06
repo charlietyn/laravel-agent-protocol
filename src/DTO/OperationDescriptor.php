@@ -14,6 +14,10 @@ final readonly class OperationDescriptor implements JsonSerializable
     /**
      * @param  array<string, mixed>  $request
      * @param  array<string, mixed>  $response
+     * @param  array<int, string>  $permissions
+     * @param  array<string, mixed>  $security
+     * @param  array<int, array<string, mixed>>  $examples
+     * @param  array<string, mixed>  $sideEffects
      */
     public function __construct(
         public string $scenario,
@@ -25,6 +29,12 @@ final readonly class OperationDescriptor implements JsonSerializable
         public array $request = [],
         public array $response = [],
         public string $source = 'inferred',
+        public string $risk = 'medium',
+        public bool $requiresConfirmation = false,
+        public array $permissions = [],
+        public array $security = [],
+        public array $examples = [],
+        public array $sideEffects = [],
     ) {}
 
     /**
@@ -42,6 +52,12 @@ final readonly class OperationDescriptor implements JsonSerializable
             'request' => $this->request,
             'response' => $this->response,
             'source' => $this->source,
+            'risk' => $this->risk,
+            'requires_confirmation' => $this->requiresConfirmation,
+            'permissions' => $this->permissions,
+            'security' => $this->security,
+            'examples' => $this->examples,
+            'side_effects' => $this->sideEffects,
         ]);
     }
 

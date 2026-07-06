@@ -7,6 +7,8 @@ namespace Ronu\LaravelAgentProtocol\Cache;
 use Illuminate\Contracts\Cache\Factory as CacheFactory;
 use Illuminate\Contracts\Cache\Repository;
 use Illuminate\Contracts\Config\Repository as ConfigRepository;
+use Illuminate\Contracts\Container\Container;
+use Illuminate\Http\Request;
 use Ronu\LaravelAgentProtocol\Contracts\MetadataCompilerContract;
 use Ronu\LaravelAgentProtocol\Contracts\MetadataRepositoryContract;
 use Ronu\LaravelAgentProtocol\DTO\AgentMetadataGraph;
@@ -17,6 +19,7 @@ final readonly class MetadataRepository implements MetadataRepositoryContract
         private MetadataCompilerContract $compiler,
         private CacheFactory $cache,
         private ConfigRepository $config,
+        private Container $container,
     ) {}
 
     public function get(): AgentMetadataGraph
@@ -57,7 +60,14 @@ final readonly class MetadataRepository implements MetadataRepositoryContract
     {
         $key = $this->config->get('agent-protocol.cache.key', 'agent-protocol:metadata:v1');
 
-        return is_string($key) && $key !== '' ? $key : 'agent-protocol:metadata:v1';
+        $base = is_string($key) && $key !== '' ? $key : 'agent-protocol:metadata:v1';
+        $variation = $this->variation();
+
+        if ($variation === []) {
+            return $base;
+        }
+
+        return $base.':'.sha1((string) json_encode($variation));
     }
 
     private function ttl(): int
@@ -74,5 +84,35 @@ final readonly class MetadataRepository implements MetadataRepositoryContract
         return is_string($store) && $store !== ''
             ? $this->cache->store($store)
             : $this->cache->store();
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function variation(): array
+    {
+        $headers = $this->config->get('agent-protocol.cache.vary.headers', []);
+        if (! is_array($headers) || $headers === [] || ! $this->container->bound('request')) {
+            return [];
+        }
+
+        $request = $this->container->make('request');
+        if (! $request instanceof Request) {
+            return [];
+        }
+
+        $variation = [];
+        foreach ($headers as $header) {
+            if (! is_string($header) || $header === '') {
+                continue;
+            }
+
+            $value = $request->headers->get($header);
+            if ($value !== null && $value !== '') {
+                $variation['headers'][$header] = $value;
+            }
+        }
+
+        return $variation;
     }
 }

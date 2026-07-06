@@ -13,9 +13,10 @@ final class ModelInspector
 {
     /**
      * @param  array<string, ValidationDescriptor>  $validations
+     * @param  array<string, mixed>  $visibility
      * @return array{table: ?string, primary_key: ?string, fields: array<int, FieldDescriptor>, meta: array<string, mixed>}
      */
-    public function inspect(?string $modelClass, array $validations = []): array
+    public function inspect(?string $modelClass, array $validations = [], array $visibility = []): array
     {
         if (! $modelClass || ! class_exists($modelClass) || ! is_subclass_of($modelClass, Model::class)) {
             return [
@@ -30,6 +31,11 @@ final class ModelInspector
         $model = new $modelClass;
         $fillable = $model->getFillable();
         $casts = method_exists($model, 'getCasts') ? $model->getCasts() : [];
+        $hidden = method_exists($model, 'getHidden') ? $model->getHidden() : [];
+        $publicFields = $this->stringList($visibility['public_fields'] ?? []);
+        $hiddenFields = array_values(array_unique([...$hidden, ...$this->stringList($visibility['hidden_fields'] ?? [])]));
+        $sensitiveFields = $this->stringList($visibility['sensitive_fields'] ?? []);
+        $exposeSensitive = (bool) ($visibility['expose_sensitive_fields'] ?? false);
         $columns = $this->columnsFor($model);
         $validationByField = $this->validationByField($validations);
         $fieldNames = array_values(array_unique(array_filter([
@@ -41,6 +47,10 @@ final class ModelInspector
         ])));
 
         sort($fieldNames);
+        $fieldNames = array_values(array_filter(
+            $fieldNames,
+            fn (string $field): bool => $this->shouldPublishField($field, $publicFields, $hiddenFields, $sensitiveFields, $exposeSensitive),
+        ));
 
         $fields = array_map(
             fn (string $field): FieldDescriptor => new FieldDescriptor(
@@ -50,6 +60,10 @@ final class ModelInspector
                 fillable: in_array($field, $fillable, true),
                 cast: $this->castFor($field, $casts),
                 validationRules: $validationByField[$field] ?? [],
+                filterable: ! in_array($field, $sensitiveFields, true),
+                selectable: ! in_array($field, $hiddenFields, true),
+                sensitive: in_array($field, $sensitiveFields, true),
+                visible: true,
             ),
             $fieldNames,
         );
@@ -63,6 +77,9 @@ final class ModelInspector
                 'key_type' => $model->getKeyType(),
                 'incrementing' => $model->getIncrementing(),
                 'timestamps' => $model->usesTimestamps(),
+                'hidden_fields' => $hiddenFields,
+                'sensitive_fields_redacted' => array_values(array_intersect($fieldNames, $sensitiveFields)) === []
+                    && $sensitiveFields !== [],
                 'soft_delete_column' => method_exists($model, 'getSoftDeleteColumn')
                     ? $model->getSoftDeleteColumn()
                     : null,
@@ -141,6 +158,41 @@ final class ModelInspector
         $baseModel = 'Ronu\\RestGenericClass\\Core\\Models\\BaseModel';
 
         return class_exists($baseModel) && is_subclass_of($modelClass, $baseModel);
+    }
+
+    /**
+     * @param  array<int, string>  $publicFields
+     * @param  array<int, string>  $hiddenFields
+     * @param  array<int, string>  $sensitiveFields
+     */
+    private function shouldPublishField(
+        string $field,
+        array $publicFields,
+        array $hiddenFields,
+        array $sensitiveFields,
+        bool $exposeSensitive,
+    ): bool {
+        if ($publicFields !== []) {
+            return in_array($field, $publicFields, true);
+        }
+
+        if (in_array($field, $hiddenFields, true)) {
+            return false;
+        }
+
+        return $exposeSensitive || ! in_array($field, $sensitiveFields, true);
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function stringList(mixed $values): array
+    {
+        if (! is_array($values)) {
+            return [];
+        }
+
+        return array_values(array_filter($values, is_string(...)));
     }
 
     /**

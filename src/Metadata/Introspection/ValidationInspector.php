@@ -38,6 +38,8 @@ final readonly class ValidationInspector
                     $descriptors[$scenario] = new ValidationDescriptor(
                         scenario: $scenario,
                         rules: $this->normalizeRules($request->getRulesForScenario($scenario)),
+                        messages: $this->messages($request),
+                        authorization: $this->authorization($request),
                     );
                 }
 
@@ -49,6 +51,8 @@ final readonly class ValidationInspector
                     'default' => new ValidationDescriptor(
                         scenario: 'default',
                         rules: $this->normalizeRules($request->rules()),
+                        messages: $this->messages($request),
+                        authorization: $this->authorization($request),
                     ),
                 ];
             }
@@ -88,5 +92,49 @@ final readonly class ValidationInspector
         ksort($normalized);
 
         return $normalized;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function messages(object $request): array
+    {
+        if (! method_exists($request, 'messages')) {
+            return [];
+        }
+
+        try {
+            $messages = $request->messages();
+        } catch (\Throwable) {
+            return [];
+        }
+
+        if (! is_array($messages)) {
+            return [];
+        }
+
+        $normalized = [];
+        foreach ($messages as $key => $message) {
+            if (is_string($key) && is_scalar($message)) {
+                $normalized[$key] = (string) $message;
+            }
+        }
+
+        return $normalized;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function authorization(object $request): array
+    {
+        if (! method_exists($request, 'authorize')) {
+            return ['declared' => false];
+        }
+
+        return [
+            'declared' => true,
+            'runtime_evaluated' => false,
+        ];
     }
 }
