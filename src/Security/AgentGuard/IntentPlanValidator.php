@@ -62,6 +62,11 @@ final readonly class IntentPlanValidator
         $violations = [];
         foreach ($plan->select as $field) {
             if ($field === '*') {
+                $violation = $this->validateWildcardSelect($resource);
+                if ($violation instanceof PolicyViolation) {
+                    $violations[] = $violation;
+                }
+
                 continue;
             }
 
@@ -72,6 +77,36 @@ final readonly class IntentPlanValidator
         }
 
         return $violations;
+    }
+
+    private function validateWildcardSelect(ResourceDescriptor $resource): ?PolicyViolation
+    {
+        $fields = $this->fieldMap($resource);
+        if ($fields === []) {
+            return PolicyViolation::forbiddenField('*', [
+                'resource' => $resource->key,
+                'usage' => 'select',
+                'reason' => 'Wildcard select is unsafe because the resource publishes no field visibility contract.',
+            ]);
+        }
+
+        $blockedFields = [];
+        foreach ($fields as $field) {
+            if (! $field->visible || $field->sensitive || ! $field->selectable) {
+                $blockedFields[] = $field->name;
+            }
+        }
+
+        if ($blockedFields !== []) {
+            return PolicyViolation::forbiddenField('*', [
+                'resource' => $resource->key,
+                'usage' => 'select',
+                'reason' => 'Wildcard select would include hidden, sensitive or non-selectable fields.',
+                'blocked_fields' => $blockedFields,
+            ]);
+        }
+
+        return null;
     }
 
     /**
@@ -204,12 +239,18 @@ final readonly class IntentPlanValidator
         }
 
         foreach ($node as $key => $value) {
-            if (is_string($key) && ! in_array($key, ['oper', 'and', 'or', 'not'], true) && ! is_array($value)) {
+            if (is_string($key) && ! $this->isFilterControlKey($key)) {
                 $state['count']++;
                 $violation = $this->validateField($key, $resource, 'filter');
                 if ($violation instanceof PolicyViolation) {
                     $violations[] = $violation;
                 }
+
+                // Legacy equality filters use the key as the field name and the value
+                // as data, for example: {"status": ["active", "inactive"]}.
+                // Once the field key is validated, do not recurse into scalar values
+                // as if they were standalone filter expressions.
+                continue;
             }
 
             $violations = [
@@ -360,6 +401,11 @@ final readonly class IntentPlanValidator
             trim($relation),
             $fields === '' ? [] : array_values(array_filter(array_map('trim', explode(',', $fields)))),
         ];
+    }
+
+    private function isFilterControlKey(string $key): bool
+    {
+        return in_array($key, ['oper', 'and', 'or', 'not'], true);
     }
 
     /**
