@@ -792,6 +792,7 @@ Expected result:
 
 - [Install](docs/INSTALL.md)
 - [Quickstart](docs/QUICKSTART.md)
+- [Junior Guide](docs/JUNIOR_GUIDE.md)
 - [Advanced Usage Guide](docs/GUIA_AVANZADA.md)
 - [Protocol](docs/PROTOCOL.md)
 - [Endpoints](docs/ENDPOINTS.md)
