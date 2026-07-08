@@ -16,6 +16,9 @@ final class ReleaseScript
 
     private bool $dryRun;
 
+    /** @var list<string>|null */
+    private ?array $composerCommand = null;
+
     /**
      * @param  list<string>  $argv
      */
@@ -63,6 +66,7 @@ final class ReleaseScript
         $branch = $this->option('branch', $this->env('RELEASE_BRANCH', 'main'));
         $tagPrefix = $this->option('tag-prefix', $this->env('RELEASE_TAG_PREFIX', 'v'));
         $tag = $tagPrefix.$version;
+        $composerCommand = $this->composerCommand();
         $repository = $this->option(
             'packagist-repository',
             $this->env('PACKAGIST_REPOSITORY', $this->repositoryFromGitRemote($remote))
@@ -73,6 +77,7 @@ final class ReleaseScript
         $this->line('Tag: '.$tag);
         $this->line('Remote: '.$remote);
         $this->line('Branch: '.$branch);
+        $this->line('Composer: '.$this->shellCommand($composerCommand));
 
         if ($this->dryRun) {
             $this->skip('Dry run enabled. No tags, pushes or Packagist requests will be created.');
@@ -80,12 +85,6 @@ final class ReleaseScript
 
         if (! $this->commandExists('git')) {
             $this->fail('Git is required.');
-
-            return 1;
-        }
-
-        if (! $this->commandExists('composer')) {
-            $this->fail('Composer is required.');
 
             return 1;
         }
@@ -151,7 +150,7 @@ final class ReleaseScript
 
     private function runQualityGates(): void
     {
-        $this->runCommand(['composer', 'validate', '--strict']);
+        $this->runCommand(array_merge($this->composerCommand(), ['validate', '--strict']));
 
         if ($this->hasFlag('skip-format')) {
             $this->skip('Format check skipped by --skip-format.');
@@ -201,16 +200,7 @@ final class ReleaseScript
 
     private function commandExists(string $command): bool
     {
-        $lookup = PHP_OS_FAMILY === 'Windows' ? 'where' : 'command -v';
-        $exitCode = 0;
-
-        if ($lookup === 'where') {
-            exec('where '.escapeshellarg($command).' >NUL 2>NUL', $unused, $exitCode);
-        } else {
-            exec('command -v '.escapeshellarg($command).' >/dev/null 2>&1', $unused, $exitCode);
-        }
-
-        return $exitCode === 0;
+        return $this->executablePath($command) !== '';
     }
 
     private function tagExists(string $tag, string $remote): bool
@@ -301,6 +291,82 @@ final class ReleaseScript
         }
 
         return $url;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function composerCommand(): array
+    {
+        if ($this->composerCommand !== null) {
+            return $this->composerCommand;
+        }
+
+        $configured = $this->option('composer-bin', $this->env('RELEASE_COMPOSER_BIN'));
+
+        if ($configured !== '') {
+            return $this->composerCommand = $this->normalizeComposerCommand($configured);
+        }
+
+        $composer = $this->executablePath('composer');
+
+        if ($composer === '') {
+            $this->fail('Composer is required. Use --composer-bin=PATH or RELEASE_COMPOSER_BIN=PATH.');
+            exit(1);
+        }
+
+        return $this->composerCommand = $this->normalizeComposerCommand($composer);
+    }
+
+    private function executablePath(string $command): string
+    {
+        $lines = [];
+        $exitCode = 0;
+
+        if (PHP_OS_FAMILY === 'Windows') {
+            exec('where '.escapeshellarg($command).' 2>NUL', $lines, $exitCode);
+        } else {
+            exec('command -v '.escapeshellarg($command).' 2>/dev/null', $lines, $exitCode);
+        }
+
+        if ($exitCode !== 0) {
+            return '';
+        }
+
+        foreach ($lines as $line) {
+            $path = trim($line);
+
+            if ($path !== '') {
+                return $path;
+            }
+        }
+
+        return '';
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function normalizeComposerCommand(string $binary): array
+    {
+        $binary = trim($binary, " \t\n\r\0\x0B\"'");
+        $lower = strtolower($binary);
+
+        if (str_ends_with($lower, '.phar')) {
+            return [PHP_BINARY, $binary];
+        }
+
+        if (preg_match('/\.(bat|cmd)$/', $lower) === 1) {
+            $phar = dirname($binary).DIRECTORY_SEPARATOR.'composer.phar';
+
+            if (is_file($phar)) {
+                return [PHP_BINARY, $phar];
+            }
+
+            return ['cmd', '/d', '/c', $binary];
+        }
+
+        return [$binary];
     }
 
     private function syncPackagist(string $repository): void
@@ -435,6 +501,7 @@ Quality options:
   --skip-static                  Skip PHPStan.
   --skip-tests                   Skip Pest tests.
   --with-rector                  Run Rector in dry-run mode.
+  --composer-bin=PATH            Composer executable, composer.bat or composer.phar.
 
 Packagist options:
   --no-packagist                 Skip Packagist API sync.
@@ -450,6 +517,7 @@ Environment:
   RELEASE_REMOTE                 Default remote.
   RELEASE_BRANCH                 Default branch.
   RELEASE_TAG_PREFIX             Default tag prefix.
+  RELEASE_COMPOSER_BIN           Composer executable, composer.bat or composer.phar.
   PACKAGIST_USERNAME             Packagist username.
   PACKAGIST_TOKEN                Packagist API token.
   PACKAGIST_REPOSITORY           Repository URL sent to Packagist.

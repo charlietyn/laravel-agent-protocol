@@ -65,6 +65,8 @@ Useful options:
 - `--skip-static`: skip PHPStan.
 - `--skip-tests`: skip Pest.
 - `--with-rector`: run Rector in dry-run mode.
+- `--composer-bin=PATH`: Composer executable, `composer.bat` or
+  `composer.phar`.
 - `--skip-tag`: do not create a local Git tag.
 - `--no-push`: do not push branch or tag.
 - `--no-packagist`: do not call the Packagist API.
@@ -78,10 +80,23 @@ Environment variables:
 RELEASE_REMOTE
 RELEASE_BRANCH
 RELEASE_TAG_PREFIX
+RELEASE_COMPOSER_BIN
 PACKAGIST_USERNAME
 PACKAGIST_TOKEN
 PACKAGIST_REPOSITORY
 ```
+
+On Windows, prefer `RELEASE_COMPOSER_BIN` when Composer is installed through
+WampServer, XAMPP or a custom PHP stack:
+
+```powershell
+$env:RELEASE_COMPOSER_BIN = 'C:\wamp64\bin\composer\composer.bat'
+php scripts\release.php --version=0.1.0 --dry-run
+```
+
+Do not use Composer's own `COMPOSER` environment variable for this. Composer
+uses `COMPOSER` to override the path to `composer.json`, not to locate the
+Composer executable.
 
 Packagist bearer authentication uses:
 
