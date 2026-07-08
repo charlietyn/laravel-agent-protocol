@@ -88,6 +88,28 @@ Operations are classified as:
 
 `high` and `critical` operations require `requires_confirmation=true`.
 
+## ADP Agent Guard
+
+`ADP Agent Guard` validates model-generated tool plans before n8n, MCP adapters
+or custom agents call the real Laravel API. It is deterministic PHP validation;
+it does not consume LLM tokens and does not execute HTTP requests.
+
+It blocks:
+
+- out-of-domain prompts;
+- invented resources, operations, fields, relations or operators;
+- hidden or sensitive fields;
+- prompt-hijacking signals;
+- high-risk operations without confirmation;
+- critical operations when policy says they are blocked.
+
+```php
+$result = app(\Ronu\LaravelAgentProtocol\Security\AgentGuard\ToolExecutionGuard::class)
+    ->authorize($intentPlan, $graph, $agentContext);
+```
+
+See [ADP Agent Guard](docs/AGENT_GUARD.md) for examples, n8n/MCP flow and token-cost guidance.
+
 ## Cache
 
 ADP metadata is compiled into an `AgentMetadataGraph` and cached. Cache keys can
@@ -151,6 +173,7 @@ limits.
 - [Endpoints](docs/ENDPOINTS.md)
 - [Cache](docs/CACHE.md)
 - [Security](docs/SECURITY.md)
+- [ADP Agent Guard](docs/AGENT_GUARD.md)
 - [Readiness](docs/READINESS.md)
 - [CLI](docs/CLI.md)
 - [Exporters](docs/EXPORTERS.md)
