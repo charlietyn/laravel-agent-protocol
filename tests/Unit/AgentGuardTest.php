@@ -71,6 +71,57 @@ final class AgentGuardTest extends TestCase
         self::assertSame('ADP_FORBIDDEN_FIELD', $result->code());
     }
 
+    public function test_guard_blocks_wildcard_select_when_resource_has_sensitive_or_hidden_fields(): void
+    {
+        $result = $this->guard()->authorize(
+            new IntentPlan(
+                resource: 'security.user',
+                operation: 'query',
+                select: ['*'],
+                naturalLanguageIntent: 'Dame todos los campos publicados de usuarios.',
+            ),
+            $this->graph(),
+            new AgentContext(permissions: ['security.user.view']),
+        );
+
+        self::assertFalse($result->allowed);
+        self::assertSame('ADP_FORBIDDEN_FIELD', $result->code());
+        self::assertSame('blocked', $result->action());
+    }
+
+    public function test_guard_blocks_sensitive_field_in_legacy_array_filter_shape(): void
+    {
+        $result = $this->guard()->authorize(
+            new IntentPlan(
+                resource: 'security.user',
+                operation: 'query',
+                filters: ['password' => ['secret-value']],
+                naturalLanguageIntent: 'Filtra usuarios por un campo interno protegido.',
+            ),
+            $this->graph(),
+            new AgentContext(permissions: ['security.user.view']),
+        );
+
+        self::assertFalse($result->allowed);
+        self::assertSame('ADP_FORBIDDEN_FIELD', $result->code());
+    }
+
+    public function test_guard_allows_filterable_field_in_legacy_array_filter_shape(): void
+    {
+        $result = $this->guard()->authorize(
+            new IntentPlan(
+                resource: 'security.user',
+                operation: 'query',
+                filters: ['status' => ['active', 'inactive']],
+                naturalLanguageIntent: 'Filtra usuarios por estados permitidos.',
+            ),
+            $this->graph(),
+            new AgentContext(permissions: ['security.user.view']),
+        );
+
+        self::assertTrue($result->allowed);
+    }
+
     public function test_guard_blocks_prompt_hijacking_signal(): void
     {
         $result = $this->guard()->authorize(
