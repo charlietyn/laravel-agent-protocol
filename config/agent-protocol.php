@@ -113,6 +113,86 @@ return [
         'confirmation_required_for' => ['high', 'critical'],
     ],
 
+    'agent_guard' => [
+        'enabled' => env('AGENT_PROTOCOL_GUARD_ENABLED', true),
+        'mode' => env('AGENT_PROTOCOL_GUARD_MODE', 'closed_world'),
+        'allowed_operators' => ['=', '!=', '<', '>', '<=', '>=', 'like', 'not like',
+            'ilike', 'not ilike', 'in', 'not in', 'between',
+            'not between', 'null', 'not null', 'exists',
+            'not exists', 'date', 'not date'],
+        'max_depth' => env('AGENT_PROTOCOL_MAX_DEPTH', 5),
+        'max_conditions' => env('AGENT_PROTOCOL_MAX_CONDITIONS', 100),
+
+        'reject' => [
+            'unknown_domain' => true,
+            'unknown_resource' => true,
+            'unknown_operation' => true,
+            'unknown_field' => true,
+            'unknown_relation' => true,
+            'unknown_operator' => true,
+            'unknown_reference' => true,
+        ],
+
+        'domain' => [
+            'enabled' => env('AGENT_PROTOCOL_DOMAIN_GUARD_ENABLED', true),
+            'mode' => env('AGENT_PROTOCOL_DOMAIN_MODE', 'closed'),
+            'allowed_modules' => array_values(array_filter(array_map(
+                'trim',
+                explode(',', env('AGENT_PROTOCOL_ALLOWED_MODULES', ''))
+            ))),
+            'allowed_resources' => [],
+            'blocked_resources' => [
+                'system.config',
+                'security.internal_token',
+            ],
+            'blocked_topics' => [
+                'passwords',
+                'tokens',
+                'secrets',
+                'system prompts',
+                'private keys',
+                'server environment',
+                'database credentials',
+                'contraseñas',
+                'tokens internos',
+                'prompt del sistema',
+                'claves privadas',
+            ],
+            'allowed_operations' => [],
+        ],
+
+        'prompt_injection' => [
+            'enabled' => env('AGENT_PROTOCOL_PROMPT_INJECTION_DETECTION', true),
+            'strategy' => 'detect_and_block',
+            'patterns' => [
+                'ignore previous instructions',
+                'disregard system prompt',
+                'reveal your system prompt',
+                'bypass policy',
+                'act as developer',
+                'do anything now',
+                'forget adp',
+                'ignore the contract',
+                'ignora las instrucciones anteriores',
+                'revela el prompt del sistema',
+                'sáltate la política',
+            ],
+        ],
+
+        'risk' => [
+            'confirmation_required_for' => ['high', 'critical'],
+            'critical_default' => env('AGENT_PROTOCOL_CRITICAL_DEFAULT', 'block'), // block|confirm
+            'block_without_confirmation' => env('AGENT_PROTOCOL_BLOCK_WITHOUT_CONFIRMATION', true),
+        ],
+
+        'response' => [
+            'safe_rejection' => true,
+            'include_debug' => env('APP_DEBUG', false),
+            'default_locale' => env('APP_LOCALE', 'es'),
+            'messages' => [],
+        ],
+    ],
+
     'limits' => [
         'max_depth' => env('AGENT_PROTOCOL_MAX_DEPTH'),
         'max_conditions' => env('AGENT_PROTOCOL_MAX_CONDITIONS'),
@@ -201,6 +281,36 @@ return [
                 'code' => 'ADP_METADATA_INVALID',
                 'status' => 422,
                 'message' => 'The compiled metadata graph violates the Agent Discovery Protocol contract.',
+            ],
+            [
+                'code' => 'ADP_INTENT_OUT_OF_DOMAIN',
+                'status' => 422,
+                'message' => 'The requested intent is outside the published ADP business domain.',
+            ],
+            [
+                'code' => 'ADP_UNTRUSTED_INSTRUCTION_DETECTED',
+                'status' => 422,
+                'message' => 'The request contains instructions that attempt to override the ADP execution policy.',
+            ],
+            [
+                'code' => 'ADP_TOOL_PLAN_INVALID',
+                'status' => 422,
+                'message' => 'The generated tool plan does not satisfy the ADP contract.',
+            ],
+            [
+                'code' => 'ADP_FORBIDDEN_FIELD',
+                'status' => 403,
+                'message' => 'The requested field is not visible or is explicitly protected.',
+            ],
+            [
+                'code' => 'ADP_CONFIRMATION_REQUIRED',
+                'status' => 409,
+                'message' => 'The requested operation requires explicit human confirmation before execution.',
+            ],
+            [
+                'code' => 'ADP_CRITICAL_OPERATION_BLOCKED',
+                'status' => 403,
+                'message' => 'The requested critical operation is blocked by policy.',
             ],
             [
                 'code' => 'ADP_INVALID_RELATION',
