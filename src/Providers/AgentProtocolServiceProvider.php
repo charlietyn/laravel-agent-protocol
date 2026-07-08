@@ -28,6 +28,8 @@ use Ronu\LaravelAgentProtocol\Metadata\Passes\SemanticMetadataPass;
 use Ronu\LaravelAgentProtocol\Metadata\Providers\ConfigDictionaryProvider;
 use Ronu\LaravelAgentProtocol\Metadata\Providers\ConfigDocumentationProvider;
 use Ronu\LaravelAgentProtocol\Metadata\Providers\ConfigResourceProvider;
+use Ronu\LaravelAgentProtocol\Security\AgentGuard\ToolExecutionGuard;
+use Ronu\LaravelAgentProtocol\Validation\ProtocolValidator;
 
 final class AgentProtocolServiceProvider extends ServiceProvider
 {
@@ -70,6 +72,14 @@ final class AgentProtocolServiceProvider extends ServiceProvider
         });
 
         $this->app->singleton(MetadataRepositoryContract::class, MetadataRepository::class);
+
+        $this->app->singleton(ToolExecutionGuard::class, fn (): ToolExecutionGuard => new ToolExecutionGuard(
+            (array) config('agent-protocol.agent_guard', []),
+        ));
+
+        $this->app->singleton(ProtocolValidator::class, fn (): ProtocolValidator => new ProtocolValidator(
+            (array) config('agent-protocol.agent_guard', []),
+        ));
     }
 
     public function boot(): void
