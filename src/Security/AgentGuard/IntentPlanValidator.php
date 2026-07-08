@@ -342,7 +342,7 @@ final readonly class IntentPlanValidator
      */
     private function validatePermissions(array $requiredPermissions, AgentContext $context, string $resource, string $operation): array
     {
-        if ($requiredPermissions === [] || $context->permissions === []) {
+        if ($requiredPermissions === []) {
             return [];
         }
 
@@ -356,7 +356,13 @@ final readonly class IntentPlanValidator
             'The caller is not allowed to execute or inspect this ADP operation.',
             403,
             'blocked',
-            ['resource' => $resource, 'operation' => $operation, 'missing_permissions' => $missing],
+            [
+                'resource' => $resource,
+                'operation' => $operation,
+                'required_permissions' => $requiredPermissions,
+                'caller_permissions' => $context->permissions,
+                'missing_permissions' => $missing,
+            ],
         )];
     }
 
