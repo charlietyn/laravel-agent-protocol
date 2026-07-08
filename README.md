@@ -203,7 +203,12 @@ sequenceDiagram
     else Invalid plan
         Guard-->>Agent: Safe rejection
     end
+    opt Natural language response enabled
+        Agent-->>User: Natural language answer based on API result or safe rejection
+    end
 ```
+
+When the integration wants a human-friendly reply, the LLM can transform the validated API result or the safe rejection into natural language for the user. This is an optional presentation step; it does not replace Agent Guard validation, Laravel authorization or backend execution.
 
 ### Example: valid query
 
