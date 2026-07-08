@@ -5,10 +5,19 @@ declare(strict_types=1);
 namespace Ronu\LaravelAgentProtocol\Validation;
 
 use Ronu\LaravelAgentProtocol\DTO\AgentMetadataGraph;
+use Ronu\LaravelAgentProtocol\Security\AgentGuard\BusinessDomainPolicy;
+use Ronu\LaravelAgentProtocol\Security\AgentGuard\PromptInjectionSignalDetector;
 use Ronu\LaravelAgentProtocol\Security\OperationRiskClassifier;
 
 final class ProtocolValidator
 {
+    /**
+     * @param array<string, mixed> $agentGuardConfig
+     */
+    public function __construct(
+        private readonly array $agentGuardConfig = [],
+    ) {}
+
     /**
      * @return array<int, string>
      */
@@ -16,6 +25,10 @@ final class ProtocolValidator
     {
         $errors = [];
         $resourceKeys = [];
+        $domainPolicy = BusinessDomainPolicy::fromConfig($this->agentGuardConfig['domain'] ?? []);
+        $detector = new PromptInjectionSignalDetector(
+            $this->stringList($this->agentGuardConfig['prompt_injection']['patterns'] ?? []),
+        );
 
         foreach ($graph->resources as $resource) {
             if (isset($resourceKeys[$resource->key])) {
@@ -23,8 +36,20 @@ final class ProtocolValidator
             }
             $resourceKeys[$resource->key] = true;
 
+            if ($domainPolicy->isClosedWorld() && ! $domainPolicy->allowsModule($resource->module)) {
+                $errors[] = "Resource [{$resource->key}] module [{$resource->module}] is outside the configured Agent Guard domain.";
+            }
+
+            if ($domainPolicy->enabled && ! $domainPolicy->allowsResource($resource->key)) {
+                $errors[] = "Resource [{$resource->key}] is blocked or outside the configured Agent Guard resources.";
+            }
+
             if ($resource->operations === []) {
                 $errors[] = "Resource [{$resource->key}] has no operations.";
+            }
+
+            if ($this->containsInjectionSignal($resource->examples, $detector)) {
+                $errors[] = "Resource [{$resource->key}] examples contain prompt-injection-like instructions.";
             }
 
             $operationScenarios = [];
@@ -65,6 +90,16 @@ final class ProtocolValidator
                     && str_contains(strtolower($operation->scenario), 'delete')) {
                     $errors[] = "Resource [{$resource->key}] operation [{$operation->scenario}] is delete-like and cannot override destructiveHint=false.";
                 }
+
+                if (array_key_exists('openWorldHint', $operation->annotations)
+                    && $operation->annotations['openWorldHint'] === true
+                    && ($this->agentGuardConfig['mode'] ?? 'closed_world') === 'closed_world') {
+                    $errors[] = "Resource [{$resource->key}] operation [{$operation->scenario}] cannot set openWorldHint=true while Agent Guard is closed_world.";
+                }
+
+                if ($this->containsInjectionSignal($operation->examples, $detector)) {
+                    $errors[] = "Resource [{$resource->key}] operation [{$operation->scenario}] examples contain prompt-injection-like instructions.";
+                }
             }
 
             $relationNames = [];
@@ -96,6 +131,10 @@ final class ProtocolValidator
                     $errors[] = "Resource [{$resource->key}] field [{$field->name}] is enum but has no enum_values.";
                 }
 
+                if ($this->containsInjectionSignal($field->examples, $detector)) {
+                    $errors[] = "Resource [{$resource->key}] field [{$field->name}] examples contain prompt-injection-like instructions.";
+                }
+
                 foreach ($field->enumValues as $enumValue) {
                     if (! isset($enumValue['value']) || ! is_scalar($enumValue['value'])) {
                         $errors[] = "Resource [{$resource->key}] field [{$field->name}] has an enum value without scalar value.";
@@ -118,6 +157,10 @@ final class ProtocolValidator
                     if (isset($field->reference['complete']) && ! is_bool($field->reference['complete'])) {
                         $errors[] = "Resource [{$resource->key}] field [{$field->name}] reference complete flag must be boolean.";
                     }
+
+                    if ($field->sensitive && isset($field->reference['inline_values']) && $field->reference['inline_values'] !== []) {
+                        $errors[] = "Resource [{$resource->key}] field [{$field->name}] cannot publish inline reference values for sensitive metadata.";
+                    }
                 }
             }
         }
@@ -131,5 +174,22 @@ final class ProtocolValidator
         }
 
         return $errors;
+    }
+
+    private function containsInjectionSignal(array $value, PromptInjectionSignalDetector $detector): bool
+    {
+        return $detector->detect($value) !== [];
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function stringList(mixed $value): array
+    {
+        if (! is_array($value)) {
+            return [];
+        }
+
+        return array_values(array_filter($value, is_string(...)));
     }
 }

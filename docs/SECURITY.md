@@ -38,6 +38,36 @@ Operations are classified as `low`, `medium`, `high` or `critical`.
 The compiler marks `high` and `critical` operations with
 `requires_confirmation=true`.
 
+## Agent Guard
+
+`ADP Agent Guard` is the deterministic safety layer for agents, n8n workflows and
+MCP adapters. It validates a model-generated `IntentPlan` against the compiled
+ADP graph before any adapter calls the real API.
+
+It protects against:
+
+- prompt hijacking signals such as attempts to ignore ADP or reveal system prompts;
+- requests outside the configured business domain;
+- invented resources, operations, fields, relations or operators;
+- sensitive or hidden fields being selected, filtered or mutated;
+- destructive operations running without confirmation;
+- critical operations running when policy says they must be blocked.
+
+Agent Guard is configured under `agent_guard` in `config/agent-protocol.php` and
+is available from the container as `ToolExecutionGuard`.
+
+```php
+$result = app(\Ronu\LaravelAgentProtocol\Security\AgentGuard\ToolExecutionGuard::class)
+    ->authorize($intentPlan, $graph, $agentContext);
+
+if (! $result->allowed) {
+    return response()->json($result->toArray(), $result->status());
+}
+```
+
+See [ADP Agent Guard](AGENT_GUARD.md) for configuration, examples, n8n flow and
+MCP adapter guidance.
+
 ## Permissions And Context
 
 Resource and operation descriptors can publish:
@@ -53,12 +83,30 @@ Resource and operation descriptors can publish:
 Route discovery also attempts to infer permissions from middleware such as
 `can:*`, `permission:*` and `permissions:*`.
 
+Agent Guard can validate published permission hints against an `AgentContext`,
+but the real authorization decision must still happen in Laravel middleware,
+policies and service code.
+
 ## Threat Model
 
 ADP mitigates common agent risks by publishing a closed contract:
 
 - prompt injection: backend validation and fixed capabilities still apply;
-- tool misuse: risk and confirmation metadata guide adapters;
+- prompt hijacking: Agent Guard rejects attempts to override execution policy;
+- tool misuse: risk and confirmation metadata guide adapters and guards;
 - data exfiltration: only allowed fields and relations are published;
 - overfetching: filter limits and relation allowlists are discoverable;
-- filter explosion: `max_depth` and `max_conditions` are published.
+- filter explosion: `max_depth` and `max_conditions` are published;
+- out-of-domain requests: closed business-domain policy rejects unrelated tasks.
+
+## Untrusted API Data
+
+Data returned by the Laravel API must not be treated as new instructions for the
+agent. When adapters send API results back to an LLM, wrap them as untrusted data:
+
+```php
+$wrapped = app(\Ronu\LaravelAgentProtocol\Security\AgentGuard\UntrustedContentSanitizer::class)
+    ->wrap($apiResponse);
+```
+
+This makes the trust boundary explicit for n8n and MCP adapters.
