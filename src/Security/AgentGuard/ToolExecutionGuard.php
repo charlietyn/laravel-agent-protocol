@@ -29,7 +29,7 @@ final readonly class ToolExecutionGuard
             return IntentValidationResult::allowed($plan->resource, $plan->operation, meta: ['guard_disabled' => true]);
         }
 
-        if ((bool) ($config['prompt_injection']['enabled'] ?? true)) {
+        if ((bool) ($this->subConfig($config, 'prompt_injection')['enabled'] ?? true)) {
             $hits = $this->detector($config)->detectPlan($plan);
             if ($hits !== []) {
                 return IntentValidationResult::rejected(
@@ -40,7 +40,7 @@ final readonly class ToolExecutionGuard
             }
         }
 
-        $domainPolicy = BusinessDomainPolicy::fromConfig($config['domain'] ?? []);
+        $domainPolicy = BusinessDomainPolicy::fromConfig($this->subConfig($config, 'domain'));
         $domainViolation = ($this->domainGuard ?? new DomainGuard)->check($plan, $domainPolicy);
         if ($domainViolation instanceof PolicyViolation) {
             return IntentValidationResult::rejected([$domainViolation], $plan->resource, $plan->operation);
@@ -128,7 +128,7 @@ final readonly class ToolExecutionGuard
             return $this->promptInjectionDetector;
         }
 
-        $patterns = $config['prompt_injection']['patterns'] ?? [];
+        $patterns = $this->subConfig($config, 'prompt_injection')['patterns'] ?? [];
 
         return new PromptInjectionSignalDetector(is_array($patterns) ? array_values(array_filter($patterns, is_string(...))) : []);
     }
@@ -154,7 +154,7 @@ final readonly class ToolExecutionGuard
             return $this->operationRiskGuard;
         }
 
-        $risk = $config['risk'] ?? [];
+        $risk = $this->subConfig($config, 'risk');
         $confirmationRequiredFor = $risk['confirmation_required_for'] ?? [OperationRiskClassifier::HIGH, OperationRiskClassifier::CRITICAL];
 
         return new OperationRiskGuard(
@@ -162,5 +162,19 @@ final readonly class ToolExecutionGuard
             criticalDefault: is_string($risk['critical_default'] ?? null) ? $risk['critical_default'] : 'block',
             blockWithoutConfirmation: (bool) ($risk['block_without_confirmation'] ?? true),
         );
+    }
+
+    /**
+     * Read a nested configuration subtree as a typed array.
+     *
+     * @param  array<string, mixed>  $config
+     * @return array<string, mixed>
+     */
+    private function subConfig(array $config, string $key): array
+    {
+        $value = $config[$key] ?? [];
+
+        /** @var array<string, mixed> $value */
+        return is_array($value) ? $value : [];
     }
 }

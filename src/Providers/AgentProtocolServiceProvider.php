@@ -74,12 +74,27 @@ final class AgentProtocolServiceProvider extends ServiceProvider
         $this->app->singleton(MetadataRepositoryContract::class, MetadataRepository::class);
 
         $this->app->singleton(ToolExecutionGuard::class, fn (): ToolExecutionGuard => new ToolExecutionGuard(
-            (array) config('agent-protocol.agent_guard', []),
+            $this->agentGuardConfig(),
         ));
 
         $this->app->singleton(ProtocolValidator::class, fn (): ProtocolValidator => new ProtocolValidator(
-            (array) config('agent-protocol.agent_guard', []),
+            $this->agentGuardConfig(),
         ));
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function agentGuardConfig(): array
+    {
+        $config = config('agent-protocol.agent_guard', []);
+
+        if (! is_array($config)) {
+            return [];
+        }
+
+        /** @var array<string, mixed> $config */
+        return $config;
     }
 
     public function boot(): void

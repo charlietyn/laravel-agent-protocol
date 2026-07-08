@@ -36,12 +36,14 @@ final readonly class IntentPlan implements JsonSerializable
      */
     public static function fromArray(array $data): self
     {
+        $params = self::arrayValue($data['params'] ?? []);
+
         return new self(
             resource: self::stringOrDefault($data['resource'] ?? null, ''),
             operation: self::stringOrDefault($data['operation'] ?? $data['scenario'] ?? null, ''),
             select: self::stringList($data['select'] ?? []),
-            filters: self::arrayValue($data['filters'] ?? $data['params']['filters'] ?? []),
-            relations: self::stringList($data['relations'] ?? $data['params']['relations'] ?? []),
+            filters: self::arrayValue($data['filters'] ?? $params['filters'] ?? []),
+            relations: self::stringList($data['relations'] ?? $params['relations'] ?? []),
             orderby: is_array($data['orderby'] ?? null) ? $data['orderby'] : [],
             payload: self::arrayValue($data['payload'] ?? $data['body'] ?? []),
             routeParams: self::arrayValue($data['route_params'] ?? []),

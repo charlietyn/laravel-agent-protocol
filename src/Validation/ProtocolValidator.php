@@ -25,9 +25,9 @@ final class ProtocolValidator
     {
         $errors = [];
         $resourceKeys = [];
-        $domainPolicy = BusinessDomainPolicy::fromConfig($this->agentGuardConfig['domain'] ?? []);
+        $domainPolicy = BusinessDomainPolicy::fromConfig($this->subConfig('domain'));
         $detector = new PromptInjectionSignalDetector(
-            $this->stringList($this->agentGuardConfig['prompt_injection']['patterns'] ?? []),
+            $this->stringList($this->subConfig('prompt_injection')['patterns'] ?? []),
         );
 
         foreach ($graph->resources as $resource) {
@@ -176,9 +176,25 @@ final class ProtocolValidator
         return $errors;
     }
 
+    /**
+     * @param  array<int|string, mixed>  $value
+     */
     private function containsInjectionSignal(array $value, PromptInjectionSignalDetector $detector): bool
     {
         return $detector->detect($value) !== [];
+    }
+
+    /**
+     * Read a nested Agent Guard configuration subtree as a typed array.
+     *
+     * @return array<string, mixed>
+     */
+    private function subConfig(string $key): array
+    {
+        $value = $this->agentGuardConfig[$key] ?? [];
+
+        /** @var array<string, mixed> $value */
+        return is_array($value) ? $value : [];
     }
 
     /**

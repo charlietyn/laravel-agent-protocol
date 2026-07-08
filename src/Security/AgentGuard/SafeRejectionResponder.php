@@ -38,7 +38,10 @@ final readonly class SafeRejectionResponder
             return $result->message();
         }
 
-        $localized = $this->messages[$locale][$code] ?? $this->messages[$this->defaultLocale][$code] ?? null;
+        $localeMessages = $this->messages[$locale] ?? [];
+        $defaultMessages = $this->messages[$this->defaultLocale] ?? [];
+        $localized = (is_array($localeMessages) ? ($localeMessages[$code] ?? null) : null)
+            ?? (is_array($defaultMessages) ? ($defaultMessages[$code] ?? null) : null);
         if (is_string($localized) && $localized !== '') {
             return $localized;
         }
