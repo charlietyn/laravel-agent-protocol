@@ -39,6 +39,39 @@ final class AgentGuardTest extends TestCase
         self::assertSame('low', $result->risk);
     }
 
+    public function test_guard_blocks_required_permissions_when_context_is_omitted(): void
+    {
+        $result = $this->guard()->authorize(
+            new IntentPlan(
+                resource: 'security.user',
+                operation: 'query',
+                select: ['id', 'name'],
+                naturalLanguageIntent: 'Muéstrame usuarios activos.',
+            ),
+            $this->graph(),
+        );
+
+        self::assertFalse($result->allowed);
+        self::assertSame('ADP_FORBIDDEN_OPERATION', $result->code());
+    }
+
+    public function test_guard_blocks_required_permissions_when_context_permissions_are_empty(): void
+    {
+        $result = $this->guard()->authorize(
+            new IntentPlan(
+                resource: 'security.user',
+                operation: 'query',
+                select: ['id', 'name'],
+                naturalLanguageIntent: 'Muéstrame usuarios activos.',
+            ),
+            $this->graph(),
+            new AgentContext(permissions: []),
+        );
+
+        self::assertFalse($result->allowed);
+        self::assertSame('ADP_FORBIDDEN_OPERATION', $result->code());
+    }
+
     public function test_guard_blocks_out_of_domain_intent(): void
     {
         $result = $this->guard()->authorize(
