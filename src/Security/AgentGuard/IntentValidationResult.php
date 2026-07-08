@@ -9,8 +9,8 @@ use JsonSerializable;
 final readonly class IntentValidationResult implements JsonSerializable
 {
     /**
-     * @param array<int, PolicyViolation> $violations
-     * @param array<string, mixed> $meta
+     * @param  array<int, PolicyViolation>  $violations
+     * @param  array<string, mixed>  $meta
      */
     public function __construct(
         public bool $allowed,
@@ -23,7 +23,7 @@ final readonly class IntentValidationResult implements JsonSerializable
     ) {}
 
     /**
-     * @param array<string, mixed> $meta
+     * @param  array<string, mixed>  $meta
      */
     public static function allowed(
         ?string $resource = null,
@@ -36,8 +36,8 @@ final readonly class IntentValidationResult implements JsonSerializable
     }
 
     /**
-     * @param array<int, PolicyViolation> $violations
-     * @param array<string, mixed> $meta
+     * @param  array<int, PolicyViolation>  $violations
+     * @param  array<string, mixed>  $meta
      */
     public static function rejected(
         array $violations,

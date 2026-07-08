@@ -9,8 +9,8 @@ use JsonSerializable;
 final readonly class AgentContext implements JsonSerializable
 {
     /**
-     * @param array<int, string> $permissions
-     * @param array<string, mixed> $attributes
+     * @param  array<int, string>  $permissions
+     * @param  array<string, mixed>  $attributes
      */
     public function __construct(
         public ?string $userIdentifier = null,
@@ -23,7 +23,7 @@ final readonly class AgentContext implements JsonSerializable
     ) {}
 
     /**
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      */
     public static function fromArray(array $data): self
     {

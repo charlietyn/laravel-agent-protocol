@@ -10,7 +10,7 @@ use Ronu\LaravelAgentProtocol\Security\OperationRiskClassifier;
 final readonly class ToolExecutionGuard
 {
     /**
-     * @param array<string, mixed> $config
+     * @param  array<string, mixed>  $config
      */
     public function __construct(
         private array $config = [],
@@ -120,7 +120,7 @@ final readonly class ToolExecutionGuard
     }
 
     /**
-     * @param array<string, mixed> $config
+     * @param  array<string, mixed>  $config
      */
     private function detector(array $config): PromptInjectionSignalDetector
     {
@@ -134,7 +134,7 @@ final readonly class ToolExecutionGuard
     }
 
     /**
-     * @param array<string, mixed> $config
+     * @param  array<string, mixed>  $config
      */
     private function validator(array $config): IntentPlanValidator
     {
@@ -146,7 +146,7 @@ final readonly class ToolExecutionGuard
     }
 
     /**
-     * @param array<string, mixed> $config
+     * @param  array<string, mixed>  $config
      */
     private function riskGuard(array $config): OperationRiskGuard
     {

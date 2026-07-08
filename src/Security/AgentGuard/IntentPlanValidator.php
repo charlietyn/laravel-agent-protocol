@@ -18,7 +18,7 @@ final readonly class IntentPlanValidator
     ];
 
     /**
-     * @param array<string, mixed> $config
+     * @param  array<string, mixed>  $config
      */
     public function __construct(
         private array $config = [],
@@ -147,6 +147,7 @@ final readonly class IntentPlanValidator
 
             if (! $relation instanceof RelationDescriptor || ! $relation->allowed) {
                 $violations[] = PolicyViolation::invalidRelation($relationName, ['resource' => $resource->key]);
+
                 continue;
             }
 
@@ -209,7 +210,7 @@ final readonly class IntentPlanValidator
     }
 
     /**
-     * @param array<string, int> $state
+     * @param  array<string, int>  $state
      * @return array<int, PolicyViolation>
      */
     private function walkFilterNode(mixed $node, ResourceDescriptor $resource, int $depth, array &$state): array
@@ -337,7 +338,7 @@ final readonly class IntentPlanValidator
     }
 
     /**
-     * @param array<int, string> $requiredPermissions
+     * @param  array<int, string>  $requiredPermissions
      * @return array<int, PolicyViolation>
      */
     private function validatePermissions(array $requiredPermissions, AgentContext $context, string $resource, string $operation): array

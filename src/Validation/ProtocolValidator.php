@@ -12,7 +12,7 @@ use Ronu\LaravelAgentProtocol\Security\OperationRiskClassifier;
 final class ProtocolValidator
 {
     /**
-     * @param array<string, mixed> $agentGuardConfig
+     * @param  array<string, mixed>  $agentGuardConfig
      */
     public function __construct(
         private readonly array $agentGuardConfig = [],

@@ -7,7 +7,7 @@ namespace Ronu\LaravelAgentProtocol\Security\AgentGuard;
 final readonly class PromptInjectionSignalDetector
 {
     /**
-     * @param array<int, string> $patterns
+     * @param  array<int, string>  $patterns
      */
     public function __construct(
         private array $patterns = [],

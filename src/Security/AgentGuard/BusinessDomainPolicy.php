@@ -7,11 +7,11 @@ namespace Ronu\LaravelAgentProtocol\Security\AgentGuard;
 final readonly class BusinessDomainPolicy
 {
     /**
-     * @param array<int, string> $allowedModules
-     * @param array<int, string> $allowedResources
-     * @param array<int, string> $blockedResources
-     * @param array<int, string> $blockedTopics
-     * @param array<int, string> $allowedOperations
+     * @param  array<int, string>  $allowedModules
+     * @param  array<int, string>  $allowedResources
+     * @param  array<int, string>  $blockedResources
+     * @param  array<int, string>  $blockedTopics
+     * @param  array<int, string>  $allowedOperations
      */
     public function __construct(
         public bool $enabled = true,
@@ -24,7 +24,7 @@ final readonly class BusinessDomainPolicy
     ) {}
 
     /**
-     * @param array<string, mixed> $config
+     * @param  array<string, mixed>  $config
      */
     public static function fromConfig(array $config): self
     {

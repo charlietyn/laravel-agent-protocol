@@ -9,7 +9,7 @@ use JsonSerializable;
 final readonly class PolicyViolation implements JsonSerializable
 {
     /**
-     * @param array<string, mixed> $details
+     * @param  array<string, mixed>  $details
      */
     public function __construct(
         public string $code,
@@ -20,7 +20,7 @@ final readonly class PolicyViolation implements JsonSerializable
     ) {}
 
     /**
-     * @param array<string, mixed> $details
+     * @param  array<string, mixed>  $details
      */
     public static function outOfDomain(string $message = 'The requested intent is outside the published ADP business domain.', array $details = []): self
     {
@@ -28,7 +28,7 @@ final readonly class PolicyViolation implements JsonSerializable
     }
 
     /**
-     * @param array<string, mixed> $details
+     * @param  array<string, mixed>  $details
      */
     public static function untrustedInstruction(array $details = []): self
     {
@@ -42,7 +42,7 @@ final readonly class PolicyViolation implements JsonSerializable
     }
 
     /**
-     * @param array<string, mixed> $details
+     * @param  array<string, mixed>  $details
      */
     public static function unknownResource(string $resource, array $details = []): self
     {
@@ -56,7 +56,7 @@ final readonly class PolicyViolation implements JsonSerializable
     }
 
     /**
-     * @param array<string, mixed> $details
+     * @param  array<string, mixed>  $details
      */
     public static function unknownOperation(string $operation, array $details = []): self
     {
@@ -70,7 +70,7 @@ final readonly class PolicyViolation implements JsonSerializable
     }
 
     /**
-     * @param array<string, mixed> $details
+     * @param  array<string, mixed>  $details
      */
     public static function forbiddenField(string $field, array $details = []): self
     {
@@ -84,7 +84,7 @@ final readonly class PolicyViolation implements JsonSerializable
     }
 
     /**
-     * @param array<string, mixed> $details
+     * @param  array<string, mixed>  $details
      */
     public static function invalidRelation(string $relation, array $details = []): self
     {
@@ -98,7 +98,7 @@ final readonly class PolicyViolation implements JsonSerializable
     }
 
     /**
-     * @param array<string, mixed> $details
+     * @param  array<string, mixed>  $details
      */
     public static function invalidOperator(string $operator, array $details = []): self
     {
@@ -112,7 +112,7 @@ final readonly class PolicyViolation implements JsonSerializable
     }
 
     /**
-     * @param array<string, mixed> $details
+     * @param  array<string, mixed>  $details
      */
     public static function invalidPlan(string $message, array $details = []): self
     {
@@ -120,7 +120,7 @@ final readonly class PolicyViolation implements JsonSerializable
     }
 
     /**
-     * @param array<string, mixed> $details
+     * @param  array<string, mixed>  $details
      */
     public static function confirmationRequired(string $operation, string $risk, array $details = []): self
     {
@@ -134,7 +134,7 @@ final readonly class PolicyViolation implements JsonSerializable
     }
 
     /**
-     * @param array<string, mixed> $details
+     * @param  array<string, mixed>  $details
      */
     public static function criticalBlocked(string $operation, array $details = []): self
     {

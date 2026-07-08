@@ -7,7 +7,7 @@ namespace Ronu\LaravelAgentProtocol\Security\AgentGuard;
 final readonly class SafeRejectionResponder
 {
     /**
-     * @param array<string, mixed> $messages
+     * @param  array<string, mixed>  $messages
      */
     public function __construct(
         private bool $includeDebug = false,

@@ -10,7 +10,7 @@ use Ronu\LaravelAgentProtocol\Security\OperationRiskClassifier;
 final readonly class OperationRiskGuard
 {
     /**
-     * @param array<int, string> $confirmationRequiredFor
+     * @param  array<int, string>  $confirmationRequiredFor
      */
     public function __construct(
         private array $confirmationRequiredFor = [OperationRiskClassifier::HIGH, OperationRiskClassifier::CRITICAL],

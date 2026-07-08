@@ -9,13 +9,13 @@ use JsonSerializable;
 final readonly class IntentPlan implements JsonSerializable
 {
     /**
-     * @param array<int, string> $select
-     * @param array<string, mixed> $filters
-     * @param array<int, string> $relations
-     * @param array<int|string, mixed> $orderby
-     * @param array<string, mixed> $payload
-     * @param array<string, mixed> $routeParams
-     * @param array<string, mixed> $meta
+     * @param  array<int, string>  $select
+     * @param  array<string, mixed>  $filters
+     * @param  array<int, string>  $relations
+     * @param  array<int|string, mixed>  $orderby
+     * @param  array<string, mixed>  $payload
+     * @param  array<string, mixed>  $routeParams
+     * @param  array<string, mixed>  $meta
      */
     public function __construct(
         public string $resource,
@@ -32,7 +32,7 @@ final readonly class IntentPlan implements JsonSerializable
     ) {}
 
     /**
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      */
     public static function fromArray(array $data): self
     {
