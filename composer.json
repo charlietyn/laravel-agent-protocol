@@ -3,6 +3,7 @@
     "description": "Agent Discovery Protocol implementation for Laravel APIs built on top of rest-generic-class metadata.",
     "type": "library",
     "license": "MIT",
+    "version": "0.2.1",
     "homepage": "https://github.com/charlietyn/laravel-agent-protocol",
     "keywords": [
         "adp",
