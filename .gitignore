@@ -5,4 +5,4 @@
 /.pest.result
 /.phpstan.cache/
 /.idea
-/conversacion claude.txt
+/**/graphify-out/
