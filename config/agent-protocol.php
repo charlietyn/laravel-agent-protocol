@@ -193,6 +193,31 @@ return [
         ],
     ],
 
+    'input_guard' => [
+        'enabled' => env('AGENT_PROTOCOL_INPUT_GUARD_ENABLED', true),
+        'mode' => env('AGENT_PROTOCOL_INPUT_GUARD_MODE', 'reject'), // reject|warn|truncate
+
+        'limits' => [
+            'max_chars' => (int) env('AGENT_PROTOCOL_INPUT_MAX_CHARS', 12000),
+            'max_bytes' => (int) env('AGENT_PROTOCOL_INPUT_MAX_BYTES', 48000),
+            'max_lines' => (int) env('AGENT_PROTOCOL_INPUT_MAX_LINES', 300),
+            'max_repeated_char_run' => (int) env('AGENT_PROTOCOL_INPUT_MAX_REPEATED_CHAR_RUN', 120),
+        ],
+
+        'normalize' => [
+            'trim' => true,
+            'collapse_control_chars' => true,
+        ],
+
+        'security' => [
+            'detect_prompt_injection' => true,
+            'detect_secrets' => true,
+            'deny_binary_content' => true,
+            'prompt_injection_patterns' => [],
+            'sensitive_patterns' => [],
+        ],
+    ],
+
     'project_context' => [
         'enabled' => env('AGENT_PROTOCOL_PROJECT_CONTEXT_ENABLED', false),
         'provider' => env('AGENT_PROTOCOL_PROJECT_CONTEXT_PROVIDER', 'graphify'),
@@ -243,8 +268,8 @@ return [
     |
     | 'security.user' => [
     |     'module' => 'security',
-    |     'model' => App\\Models\\User::class,
-    |     'request' => App\\Http\\Requests\\UserRequest::class,
+    |     'model' => App\Models\User::class,
+    |     'request' => App\Http\Requests\UserRequest::class,
     |     'endpoint' => '/api/security/users',
     |     'description' => 'Users managed by the security module.',
     |     'fields' => [
@@ -272,7 +297,7 @@ return [
     | tables publish only schema and a hint to query the referenced resource.
     |
     | 'departments' => [
-    |     'model' => App\\Models\\Department::class,
+    |     'model' => App\Models\Department::class,
     |     'resource' => 'hr.department',
     |     'fields' => ['id', 'name'],
     |     'lookup_field' => 'name',
