@@ -43,8 +43,7 @@ final readonly class AgentContextResolver
 
         return new AgentContext(
             userIdentifier: $this->resolveUserIdentifier($user, $attributes),
-            tenantId: $this->stringOrNull($request->header((string) ($this->config['tenant_header'] ?? 'X-Tenant-Id')))
-                ?? $this->resolveTenantId($user, $attributes),
+            tenantId: $this->resolveTenantId($user, $attributes) ?? $this->trustedTenantHeader($request),
             locale: $this->stringOrNull($request->header((string) ($this->config['locale_header'] ?? 'Accept-Language'))),
             source: $this->stringOrDefault($attributes['source'] ?? null, 'http'),
             channel: $this->stringOrDefault($attributes['channel'] ?? null, 'api'),
@@ -87,6 +86,15 @@ final readonly class AgentContextResolver
         }
 
         return $this->readObjectValue($user, (string) ($this->config['tenant_attribute'] ?? 'tenant_id'));
+    }
+
+    private function trustedTenantHeader(Request $request): ?string
+    {
+        if (! (bool) ($this->config['trust_tenant_header'] ?? false)) {
+            return null;
+        }
+
+        return $this->stringOrNull($request->header((string) ($this->config['tenant_header'] ?? 'X-Tenant-Id')));
     }
 
     /**
