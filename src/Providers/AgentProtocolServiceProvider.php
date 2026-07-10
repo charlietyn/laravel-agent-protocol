@@ -8,6 +8,9 @@ use Illuminate\Support\ServiceProvider;
 use Ronu\LaravelAgentProtocol\Cache\MetadataRepository;
 use Ronu\LaravelAgentProtocol\Console\Commands\AgentCacheCommand;
 use Ronu\LaravelAgentProtocol\Console\Commands\AgentClearCommand;
+use Ronu\LaravelAgentProtocol\Console\Commands\AgentContextHealthCommand;
+use Ronu\LaravelAgentProtocol\Console\Commands\AgentContextQueryCommand;
+use Ronu\LaravelAgentProtocol\Console\Commands\AgentContextValidateCommand;
 use Ronu\LaravelAgentProtocol\Console\Commands\AgentDiscoverCommand;
 use Ronu\LaravelAgentProtocol\Console\Commands\AgentDocsCommand;
 use Ronu\LaravelAgentProtocol\Console\Commands\AgentExportCommand;
@@ -28,6 +31,10 @@ use Ronu\LaravelAgentProtocol\Metadata\Passes\SemanticMetadataPass;
 use Ronu\LaravelAgentProtocol\Metadata\Providers\ConfigDictionaryProvider;
 use Ronu\LaravelAgentProtocol\Metadata\Providers\ConfigDocumentationProvider;
 use Ronu\LaravelAgentProtocol\Metadata\Providers\ConfigResourceProvider;
+use Ronu\LaravelAgentProtocol\ProjectContext\GraphifyLocalFileContextProvider;
+use Ronu\LaravelAgentProtocol\ProjectContext\NullProjectContextProvider;
+use Ronu\LaravelAgentProtocol\ProjectContext\ProjectContextManager;
+use Ronu\LaravelAgentProtocol\ProjectContext\ProjectContextProvider;
 use Ronu\LaravelAgentProtocol\Security\AgentGuard\ToolExecutionGuard;
 use Ronu\LaravelAgentProtocol\Validation\ProtocolValidator;
 
@@ -80,6 +87,25 @@ final class AgentProtocolServiceProvider extends ServiceProvider
         $this->app->singleton(ProtocolValidator::class, fn (): ProtocolValidator => new ProtocolValidator(
             (array) config('agent-protocol.agent_guard', []),
         ));
+
+        $this->app->singleton(ProjectContextProvider::class, function (): ProjectContextProvider {
+            $config = (array) config('agent-protocol.project_context', []);
+            if (! (bool) ($config['enabled'] ?? false)) {
+                return new NullProjectContextProvider;
+            }
+
+            $provider = (string) ($config['provider'] ?? 'graphify');
+            if ($provider === 'graphify') {
+                return new GraphifyLocalFileContextProvider((array) ($config['graphify'] ?? []));
+            }
+
+            return new NullProjectContextProvider;
+        });
+
+        $this->app->singleton(ProjectContextManager::class, fn ($app): ProjectContextManager => new ProjectContextManager(
+            $app->make(ProjectContextProvider::class),
+            (array) config('agent-protocol.project_context', []),
+        ));
     }
 
     public function boot(): void
@@ -103,6 +129,9 @@ final class AgentProtocolServiceProvider extends ServiceProvider
                 AgentSchemaDiscoverCommand::class,
                 AgentSchemaExportCommand::class,
                 AgentSchemaValidateCommand::class,
+                AgentContextHealthCommand::class,
+                AgentContextQueryCommand::class,
+                AgentContextValidateCommand::class,
             ]);
         }
     }
