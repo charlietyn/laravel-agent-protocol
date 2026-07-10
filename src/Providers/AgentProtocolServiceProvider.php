@@ -20,6 +20,7 @@ use Ronu\LaravelAgentProtocol\Console\Commands\AgentSchemaValidateCommand;
 use Ronu\LaravelAgentProtocol\Console\Commands\AgentValidateCommand;
 use Ronu\LaravelAgentProtocol\Contracts\MetadataCompilerContract;
 use Ronu\LaravelAgentProtocol\Contracts\MetadataRepositoryContract;
+use Ronu\LaravelAgentProtocol\InputGuard\InputTextGuard;
 use Ronu\LaravelAgentProtocol\Metadata\MetadataBuildContext;
 use Ronu\LaravelAgentProtocol\Metadata\MetadataCompiler;
 use Ronu\LaravelAgentProtocol\Metadata\Passes\ConfiguredResourcePass;
@@ -86,6 +87,10 @@ final class AgentProtocolServiceProvider extends ServiceProvider
 
         $this->app->singleton(ProtocolValidator::class, fn (): ProtocolValidator => new ProtocolValidator(
             (array) config('agent-protocol.agent_guard', []),
+        ));
+
+        $this->app->singleton(InputTextGuard::class, fn (): InputTextGuard => InputTextGuard::fromConfig(
+            (array) config('agent-protocol.input_guard', []),
         ));
 
         $this->app->singleton(ProjectContextProvider::class, function (): ProjectContextProvider {
