@@ -193,6 +193,40 @@ return [
         ],
     ],
 
+    'project_context' => [
+        'enabled' => env('AGENT_PROTOCOL_PROJECT_CONTEXT_ENABLED', false),
+        'provider' => env('AGENT_PROTOCOL_PROJECT_CONTEXT_PROVIDER', 'graphify'),
+
+        'graphify' => [
+            'enabled' => env('AGENT_PROTOCOL_GRAPHIFY_ENABLED', false),
+            'mode' => env('AGENT_PROTOCOL_GRAPHIFY_MODE', 'local_file'), // local_file|http|mcp
+            'path' => env('AGENT_PROTOCOL_GRAPHIFY_PATH', base_path('graphify-out')),
+            'graph_json' => env('AGENT_PROTOCOL_GRAPHIFY_JSON', 'graph.json'),
+            'report' => env('AGENT_PROTOCOL_GRAPHIFY_REPORT', 'GRAPH_REPORT.md'),
+            'http_url' => env('AGENT_PROTOCOL_GRAPHIFY_HTTP_URL'),
+            'api_key' => env('AGENT_PROTOCOL_GRAPHIFY_API_KEY'),
+            'max_nodes' => (int) env('AGENT_PROTOCOL_GRAPHIFY_MAX_NODES', 40),
+            'max_edges' => (int) env('AGENT_PROTOCOL_GRAPHIFY_MAX_EDGES', 80),
+            'max_chars' => (int) env('AGENT_PROTOCOL_GRAPHIFY_MAX_CHARS', 12000),
+            'require_fresh_graph' => env('AGENT_PROTOCOL_GRAPHIFY_REQUIRE_FRESH', true),
+            'treat_as_untrusted' => true,
+            'deny_sensitive_terms' => [
+                '.env',
+                'password',
+                'passwd',
+                'secret',
+                'token',
+                'private key',
+                'private_key',
+                'database credentials',
+                'db_password',
+                'access_key',
+                'refresh_token',
+                'api_key',
+            ],
+        ],
+    ],
+
     'limits' => [
         'max_depth' => env('AGENT_PROTOCOL_MAX_DEPTH'),
         'max_conditions' => env('AGENT_PROTOCOL_MAX_CONDITIONS'),
@@ -211,20 +245,20 @@ return [
     |     'module' => 'security',
     |     'model' => App\\Models\\User::class,
     |     'request' => App\\Http\\Requests\\UserRequest::class,
-     |     'endpoint' => '/api/security/users',
-     |     'description' => 'Users managed by the security module.',
-     |     'fields' => [
-     |         'status' => [
-     |             'label' => 'User status',
-     |             'description' => 'Lifecycle state used to filter active or inactive users.',
-     |             'type' => 'enum',
-     |             'enum_values' => [
-     |                 ['value' => 'active', 'label' => 'Active', 'description' => 'Can access the system.'],
-     |                 ['value' => 'inactive', 'label' => 'Inactive', 'description' => 'Cannot access the system.'],
-     |             ],
-     |         ],
-     |     ],
-     | ],
+    |     'endpoint' => '/api/security/users',
+    |     'description' => 'Users managed by the security module.',
+    |     'fields' => [
+    |         'status' => [
+    |             'label' => 'User status',
+    |             'description' => 'Lifecycle state used to filter active or inactive users.',
+    |             'type' => 'enum',
+    |             'enum_values' => [
+    |                 ['value' => 'active', 'label' => 'Active', 'description' => 'Can access the system.'],
+    |                 ['value' => 'inactive', 'label' => 'Inactive', 'description' => 'Cannot access the system.'],
+    |             ],
+    |         ],
+    |     ],
+    | ],
     */
     'resources' => [],
 
