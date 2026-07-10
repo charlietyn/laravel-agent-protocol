@@ -76,6 +76,34 @@ final class InputGuardTest extends TestCase
         self::assertSame('ADP_INPUT_BINARY_CONTENT_DETECTED', $result->code());
     }
 
+    public function test_it_rejects_raw_input_that_exceeds_max_bytes_before_trim_normalization(): void
+    {
+        $result = $this->guard(new InputTextPolicy(maxBytes: 10))->validate(str_repeat(' ', 11).'ok');
+
+        self::assertFalse($result->allowed);
+        self::assertSame('ADP_INPUT_TOO_MANY_BYTES', $result->code());
+        self::assertSame(13, $result->metadata['input_length_bytes']);
+    }
+
+    public function test_it_rejects_raw_input_that_exceeds_max_lines_before_trim_normalization(): void
+    {
+        $result = $this->guard(new InputTextPolicy(maxLines: 2))->validate("\n\n\nok");
+
+        self::assertFalse($result->allowed);
+        self::assertSame('ADP_INPUT_TOO_MANY_LINES', $result->code());
+        self::assertSame(4, $result->metadata['raw_line_count']);
+    }
+
+    public function test_it_rejects_malformed_utf8_as_binary_content_before_normalization(): void
+    {
+        $result = $this->guard()->validate("safe\xfftext");
+
+        self::assertFalse($result->allowed);
+        self::assertSame('ADP_INPUT_MALFORMED_UTF8', $result->code());
+        self::assertFalse($result->metadata['input_valid_utf8']);
+        self::assertSame('', $result->normalizedInput);
+    }
+
     private function guard(?InputTextPolicy $policy = null): InputTextGuard
     {
         return new InputTextGuard($policy ?? new InputTextPolicy);
