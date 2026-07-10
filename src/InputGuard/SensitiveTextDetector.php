@@ -7,7 +7,6 @@ namespace Ronu\LaravelAgentProtocol\InputGuard;
 final readonly class SensitiveTextDetector
 {
     private const DEFAULT_PATTERNS = [
-        '/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/i' => 'email_address',
         '/\b(?:password|passwd|pwd|secret|api[_-]?key|access[_-]?token|refresh[_-]?token)\s*[:=]/i' => 'credential_assignment',
         '/-----BEGIN (?:RSA |EC |OPENSSH |PGP )?PRIVATE KEY-----/i' => 'private_key',
         '/\bsk-[A-Za-z0-9_\-]{16,}\b/' => 'api_token_like_value',
