@@ -70,22 +70,10 @@ return [
         ],
         'cacheable_row_limit' => (int) env('AGENT_PROTOCOL_SCHEMA_CACHEABLE_ROW_LIMIT', 100),
         'cacheable_name_patterns' => [
-            '*_type',
-            '*_types',
-            '*_status',
-            '*_statuses',
-            '*_category',
-            '*_categories',
-            '*_catalog',
-            '*_catalogs',
+            '*_type', '*_types', '*_status', '*_statuses', '*_category', '*_categories', '*_catalog', '*_catalogs',
         ],
         'sensitive_column_patterns' => [
-            'password',
-            'password_*',
-            '*token*',
-            '*secret*',
-            '*recovery*',
-            '*remember*',
+            'password', 'password_*', '*token*', '*secret*', '*recovery*', '*remember*',
         ],
     ],
 
@@ -116,10 +104,7 @@ return [
     'agent_guard' => [
         'enabled' => env('AGENT_PROTOCOL_GUARD_ENABLED', true),
         'mode' => env('AGENT_PROTOCOL_GUARD_MODE', 'closed_world'),
-        'allowed_operators' => ['=', '!=', '<', '>', '<=', '>=', 'like', 'not like',
-            'ilike', 'not ilike', 'in', 'not in', 'between',
-            'not between', 'null', 'not null', 'exists',
-            'not exists', 'date', 'not date'],
+        'allowed_operators' => ['=', '!=', '<', '>', '<=', '>=', 'like', 'not like', 'ilike', 'not ilike', 'in', 'not in', 'between', 'not between', 'null', 'not null', 'exists', 'not exists', 'date', 'not date'],
         'max_depth' => env('AGENT_PROTOCOL_MAX_DEPTH', 5),
         'max_conditions' => env('AGENT_PROTOCOL_MAX_CONDITIONS', 100),
 
@@ -136,27 +121,12 @@ return [
         'domain' => [
             'enabled' => env('AGENT_PROTOCOL_DOMAIN_GUARD_ENABLED', true),
             'mode' => env('AGENT_PROTOCOL_DOMAIN_MODE', 'closed'),
-            'allowed_modules' => array_values(array_filter(array_map(
-                'trim',
-                explode(',', env('AGENT_PROTOCOL_ALLOWED_MODULES', ''))
-            ))),
+            'allowed_modules' => array_values(array_filter(array_map('trim', explode(',', env('AGENT_PROTOCOL_ALLOWED_MODULES', ''))))),
             'allowed_resources' => [],
-            'blocked_resources' => [
-                'system.config',
-                'security.internal_token',
-            ],
+            'blocked_resources' => ['system.config', 'security.internal_token'],
             'blocked_topics' => [
-                'passwords',
-                'tokens',
-                'secrets',
-                'system prompts',
-                'private keys',
-                'server environment',
-                'database credentials',
-                'contraseñas',
-                'tokens internos',
-                'prompt del sistema',
-                'claves privadas',
+                'passwords', 'tokens', 'secrets', 'system prompts', 'private keys', 'server environment', 'database credentials',
+                'contraseñas', 'tokens internos', 'prompt del sistema', 'claves privadas',
             ],
             'allowed_operations' => [],
         ],
@@ -218,6 +188,44 @@ return [
         ],
     ],
 
+    'permissions' => [
+        'resolver' => env('AGENT_PROTOCOL_PERMISSION_RESOLVER', 'auto'), // auto|spatie|callback|null
+        'callback' => null,
+    ],
+
+    'runtime_context' => [
+        'tenant_header' => env('AGENT_PROTOCOL_TENANT_HEADER', 'X-Tenant-Id'),
+        'locale_header' => env('AGENT_PROTOCOL_LOCALE_HEADER', 'Accept-Language'),
+        'user_identifier_attribute' => 'id',
+        'tenant_attribute' => 'tenant_id',
+        'scope_attributes' => [],
+    ],
+
+    'business_scope' => [
+        'enabled' => env('AGENT_PROTOCOL_BUSINESS_SCOPE_ENABLED', true),
+        'default_mode' => env('AGENT_PROTOCOL_BUSINESS_SCOPE_DEFAULT_MODE', 'enforce'), // enforce|deny|allow
+        'fail_closed' => env('AGENT_PROTOCOL_BUSINESS_SCOPE_FAIL_CLOSED', true),
+        'conflict_policy' => env('AGENT_PROTOCOL_BUSINESS_SCOPE_CONFLICT_POLICY', 'deny'), // deny|append
+
+        'audit' => [
+            'enabled' => true,
+            'log_applied_scope' => true,
+            'log_scope_conflicts' => true,
+        ],
+
+        'global_scopes' => [
+            'tenant' => [
+                'enabled' => env('AGENT_PROTOCOL_TENANT_SCOPE_ENABLED', false),
+                'attribute' => 'tenant_id',
+                'field' => 'tenant_id',
+                'operator' => '=',
+            ],
+        ],
+
+        'resolvers' => [],
+        'resources' => [],
+    ],
+
     'project_context' => [
         'enabled' => env('AGENT_PROTOCOL_PROJECT_CONTEXT_ENABLED', false),
         'provider' => env('AGENT_PROTOCOL_PROJECT_CONTEXT_PROVIDER', 'graphify'),
@@ -236,18 +244,8 @@ return [
             'require_fresh_graph' => env('AGENT_PROTOCOL_GRAPHIFY_REQUIRE_FRESH', true),
             'treat_as_untrusted' => true,
             'deny_sensitive_terms' => [
-                '.env',
-                'password',
-                'passwd',
-                'secret',
-                'token',
-                'private key',
-                'private_key',
-                'database credentials',
-                'db_password',
-                'access_key',
-                'refresh_token',
-                'api_key',
+                '.env', 'password', 'passwd', 'secret', 'token', 'private key', 'private_key', 'database credentials',
+                'db_password', 'access_key', 'refresh_token', 'api_key',
             ],
         ],
     ],
@@ -257,55 +255,8 @@ return [
         'max_conditions' => env('AGENT_PROTOCOL_MAX_CONDITIONS'),
     ],
 
-    /*
-    |--------------------------------------------------------------------------
-    | Explicit resources
-    |--------------------------------------------------------------------------
-    |
-    | Route discovery handles controllers that expose a rest-generic-class model.
-    | Use this array for resources that are not reachable from routes yet, or to
-    | enrich discovered resources with request classes, descriptions or modules.
-    |
-    | 'security.user' => [
-    |     'module' => 'security',
-    |     'model' => App\Models\User::class,
-    |     'request' => App\Http\Requests\UserRequest::class,
-    |     'endpoint' => '/api/security/users',
-    |     'description' => 'Users managed by the security module.',
-    |     'fields' => [
-    |         'status' => [
-    |             'label' => 'User status',
-    |             'description' => 'Lifecycle state used to filter active or inactive users.',
-    |             'type' => 'enum',
-    |             'enum_values' => [
-    |                 ['value' => 'active', 'label' => 'Active', 'description' => 'Can access the system.'],
-    |                 ['value' => 'inactive', 'label' => 'Inactive', 'description' => 'Cannot access the system.'],
-    |             ],
-    |         ],
-    |     ],
-    | ],
-    */
     'resources' => [],
 
-    /*
-    |--------------------------------------------------------------------------
-    | Reference tables
-    |--------------------------------------------------------------------------
-    |
-    | Small lookup tables can be embedded into field reference metadata so LLMs
-    | can resolve natural names to identifiers without an extra API call. Large
-    | tables publish only schema and a hint to query the referenced resource.
-    |
-    | 'departments' => [
-    |     'model' => App\Models\Department::class,
-    |     'resource' => 'hr.department',
-    |     'fields' => ['id', 'name'],
-    |     'lookup_field' => 'name',
-    |     'foreign_keys' => ['department_id'],
-    |     'max_records' => 100,
-    |     'cache_ttl' => 3600,
-    | ],
-    */
     'reference_tables' => [],
 
     'dictionary' => [
@@ -326,81 +277,25 @@ return [
 
     'documentation' => [
         'errors' => [
-            [
-                'code' => 'ADP_RESOURCE_NOT_FOUND',
-                'status' => 404,
-                'message' => 'The requested ADP resource descriptor does not exist.',
-            ],
-            [
-                'code' => 'ADP_OPERATION_NOT_FOUND',
-                'status' => 404,
-                'message' => 'The requested ADP operation descriptor does not exist for the resource.',
-            ],
-            [
-                'code' => 'ADP_METADATA_INVALID',
-                'status' => 422,
-                'message' => 'The compiled metadata graph violates the Agent Discovery Protocol contract.',
-            ],
-            [
-                'code' => 'ADP_INTENT_OUT_OF_DOMAIN',
-                'status' => 422,
-                'message' => 'The requested intent is outside the published ADP business domain.',
-            ],
-            [
-                'code' => 'ADP_UNTRUSTED_INSTRUCTION_DETECTED',
-                'status' => 422,
-                'message' => 'The request contains instructions that attempt to override the ADP execution policy.',
-            ],
-            [
-                'code' => 'ADP_TOOL_PLAN_INVALID',
-                'status' => 422,
-                'message' => 'The generated tool plan does not satisfy the ADP contract.',
-            ],
-            [
-                'code' => 'ADP_FORBIDDEN_FIELD',
-                'status' => 403,
-                'message' => 'The requested field is not visible or is explicitly protected.',
-            ],
-            [
-                'code' => 'ADP_CONFIRMATION_REQUIRED',
-                'status' => 409,
-                'message' => 'The requested operation requires explicit human confirmation before execution.',
-            ],
-            [
-                'code' => 'ADP_CRITICAL_OPERATION_BLOCKED',
-                'status' => 403,
-                'message' => 'The requested critical operation is blocked by policy.',
-            ],
-            [
-                'code' => 'ADP_INVALID_RELATION',
-                'status' => 400,
-                'message' => 'The requested relation is not published as an allowed ADP relation.',
-            ],
-            [
-                'code' => 'ADP_INVALID_OPERATOR',
-                'status' => 400,
-                'message' => 'The requested filter operator is not allowed by the ADP filter contract.',
-            ],
-            [
-                'code' => 'ADP_FILTER_TOO_DEEP',
-                'status' => 400,
-                'message' => 'The requested filter or orderby relation depth exceeds the published max_depth limit.',
-            ],
-            [
-                'code' => 'ADP_TOO_MANY_CONDITIONS',
-                'status' => 400,
-                'message' => 'The requested filter exceeds the published max_conditions limit.',
-            ],
-            [
-                'code' => 'ADP_UNAUTHORIZED_METADATA',
-                'status' => 401,
-                'message' => 'The caller is not authenticated for this metadata context.',
-            ],
-            [
-                'code' => 'ADP_FORBIDDEN_OPERATION',
-                'status' => 403,
-                'message' => 'The caller is not allowed to execute or inspect this ADP operation.',
-            ],
+            ['code' => 'ADP_RESOURCE_NOT_FOUND', 'status' => 404, 'message' => 'The requested ADP resource descriptor does not exist.'],
+            ['code' => 'ADP_OPERATION_NOT_FOUND', 'status' => 404, 'message' => 'The requested ADP operation descriptor does not exist for the resource.'],
+            ['code' => 'ADP_METADATA_INVALID', 'status' => 422, 'message' => 'The compiled metadata graph violates the Agent Discovery Protocol contract.'],
+            ['code' => 'ADP_INTENT_OUT_OF_DOMAIN', 'status' => 422, 'message' => 'The requested intent is outside the published ADP business domain.'],
+            ['code' => 'ADP_UNTRUSTED_INSTRUCTION_DETECTED', 'status' => 422, 'message' => 'The request contains instructions that attempt to override the ADP execution policy.'],
+            ['code' => 'ADP_TOOL_PLAN_INVALID', 'status' => 422, 'message' => 'The generated tool plan does not satisfy the ADP contract.'],
+            ['code' => 'ADP_FORBIDDEN_FIELD', 'status' => 403, 'message' => 'The requested field is not visible or is explicitly protected.'],
+            ['code' => 'ADP_CONFIRMATION_REQUIRED', 'status' => 409, 'message' => 'The requested operation requires explicit human confirmation before execution.'],
+            ['code' => 'ADP_CRITICAL_OPERATION_BLOCKED', 'status' => 403, 'message' => 'The requested critical operation is blocked by policy.'],
+            ['code' => 'ADP_INVALID_RELATION', 'status' => 400, 'message' => 'The requested relation is not published as an allowed ADP relation.'],
+            ['code' => 'ADP_INVALID_OPERATOR', 'status' => 400, 'message' => 'The requested filter operator is not allowed by the ADP filter contract.'],
+            ['code' => 'ADP_FILTER_TOO_DEEP', 'status' => 400, 'message' => 'The requested filter or orderby relation depth exceeds the published max_depth limit.'],
+            ['code' => 'ADP_TOO_MANY_CONDITIONS', 'status' => 400, 'message' => 'The requested filter exceeds the published max_conditions limit.'],
+            ['code' => 'ADP_UNAUTHORIZED_METADATA', 'status' => 401, 'message' => 'The caller is not authenticated for this metadata context.'],
+            ['code' => 'ADP_FORBIDDEN_OPERATION', 'status' => 403, 'message' => 'The caller is not allowed to execute or inspect this ADP operation.'],
+            ['code' => 'ADP_SCOPE_MISSING_CONTEXT', 'status' => 403, 'message' => 'Mandatory business scope could not be resolved from the current AgentContext.'],
+            ['code' => 'ADP_SCOPE_DENIED', 'status' => 403, 'message' => 'The requested operation is denied by business scope.'],
+            ['code' => 'ADP_SCOPE_CONFLICT', 'status' => 403, 'message' => 'The requested filters conflict with mandatory business scope.'],
+            ['code' => 'ADP_SCOPE_REVIEW_REQUIRED', 'status' => 409, 'message' => 'The requested operation requires business scope review before execution.'],
         ],
     ],
 
