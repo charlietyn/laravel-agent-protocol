@@ -36,6 +36,14 @@ use Ronu\LaravelAgentProtocol\ProjectContext\GraphifyLocalFileContextProvider;
 use Ronu\LaravelAgentProtocol\ProjectContext\NullProjectContextProvider;
 use Ronu\LaravelAgentProtocol\ProjectContext\ProjectContextManager;
 use Ronu\LaravelAgentProtocol\ProjectContext\ProjectContextProvider;
+use Ronu\LaravelAgentProtocol\Runtime\Context\AgentContextResolver;
+use Ronu\LaravelAgentProtocol\Runtime\Permissions\CallbackPermissionResolver;
+use Ronu\LaravelAgentProtocol\Runtime\Permissions\NullPermissionResolver;
+use Ronu\LaravelAgentProtocol\Runtime\Permissions\PermissionResolver;
+use Ronu\LaravelAgentProtocol\Runtime\Permissions\SpatiePermissionResolver;
+use Ronu\LaravelAgentProtocol\Runtime\Scope\BusinessScopeEnforcer;
+use Ronu\LaravelAgentProtocol\Runtime\Scope\BusinessScopeResolverRegistry;
+use Ronu\LaravelAgentProtocol\Runtime\Scope\ScopeConflictDetector;
 use Ronu\LaravelAgentProtocol\Security\AgentGuard\ToolExecutionGuard;
 use Ronu\LaravelAgentProtocol\Validation\ProtocolValidator;
 
@@ -91,6 +99,36 @@ final class AgentProtocolServiceProvider extends ServiceProvider
 
         $this->app->singleton(InputTextGuard::class, fn (): InputTextGuard => InputTextGuard::fromConfig(
             (array) config('agent-protocol.input_guard', []),
+        ));
+
+        $this->app->singleton(PermissionResolver::class, function (): PermissionResolver {
+            $config = (array) config('agent-protocol.permissions', []);
+            $resolver = (string) ($config['resolver'] ?? 'auto');
+
+            if ($resolver === 'callback' && is_callable($config['callback'] ?? null)) {
+                return new CallbackPermissionResolver($config['callback']);
+            }
+
+            if (in_array($resolver, ['auto', 'spatie'], true)) {
+                return new SpatiePermissionResolver;
+            }
+
+            return new NullPermissionResolver;
+        });
+
+        $this->app->singleton(AgentContextResolver::class, fn ($app): AgentContextResolver => new AgentContextResolver(
+            $app->make(PermissionResolver::class),
+            (array) config('agent-protocol.runtime_context', []),
+        ));
+
+        $this->app->singleton(BusinessScopeResolverRegistry::class, fn ($app): BusinessScopeResolverRegistry => new BusinessScopeResolverRegistry(
+            $app,
+            (array) config('agent-protocol.business_scope', []),
+        ));
+
+        $this->app->singleton(BusinessScopeEnforcer::class, fn (): BusinessScopeEnforcer => new BusinessScopeEnforcer(
+            new ScopeConflictDetector,
+            (array) config('agent-protocol.business_scope', []),
         ));
 
         $this->app->singleton(ProjectContextProvider::class, function (): ProjectContextProvider {
