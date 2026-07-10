@@ -68,6 +68,14 @@ final class InputGuardTest extends TestCase
         self::assertSame('ADP_INPUT_REPEATED_CHAR_RUN', $result->code());
     }
 
+    public function test_it_rejects_unsafe_control_characters_before_normalization(): void
+    {
+        $result = $this->guard()->validate("safe\x00text");
+
+        self::assertFalse($result->allowed);
+        self::assertSame('ADP_INPUT_BINARY_CONTENT_DETECTED', $result->code());
+    }
+
     private function guard(?InputTextPolicy $policy = null): InputTextGuard
     {
         return new InputTextGuard($policy ?? new InputTextPolicy);
