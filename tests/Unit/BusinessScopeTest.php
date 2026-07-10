@@ -81,6 +81,32 @@ final class BusinessScopeTest extends TestCase
         self::assertSame('ADP_SCOPE_MISSING_CONTEXT', $scope->metadata['code']);
     }
 
+    public function test_config_resolver_denies_partially_resolved_required_scope(): void
+    {
+        $resolver = new ConfigBusinessScopeResolver([
+            'fail_closed' => true,
+            'resources' => [
+                'example.resource' => [
+                    'required' => true,
+                    'filters' => [
+                        ['field' => 'owner_id', 'attribute' => 'owner_id'],
+                        ['field' => 'branch_id', 'attribute' => 'branch_id'],
+                    ],
+                ],
+            ],
+        ]);
+
+        $scope = $resolver->resolve(
+            'example.resource',
+            'query',
+            new AgentContext(attributes: ['owner_id' => '42']),
+        );
+
+        self::assertSame('deny', $scope->mode);
+        self::assertSame('ADP_SCOPE_MISSING_CONTEXT', $scope->metadata['code']);
+        self::assertSame('branch_id', $scope->metadata['missing_scope'][0]['field']);
+    }
+
     public function test_enforcer_appends_scope_filters_with_and(): void
     {
         $plan = new IntentPlan(
@@ -103,6 +129,28 @@ final class BusinessScopeTest extends TestCase
             'tenant_id|=|tenant-7',
         ], $decision->plan?->filters['oper']['and']);
         self::assertTrue($decision->plan?->meta['business_scope']['applied']);
+    }
+
+    public function test_enforcer_preserves_structured_filters_when_appending_scope(): void
+    {
+        $structuredFilter = ['status' => ['active']];
+        $plan = new IntentPlan(
+            resource: 'example.resource',
+            operation: 'query',
+            filters: ['oper' => ['and' => [$structuredFilter]]],
+        );
+
+        $scope = BusinessScope::enforce(
+            resource: 'example.resource',
+            operation: 'query',
+            filters: [new BusinessScopeFilter('tenant_id', '=', 'tenant-7')],
+        );
+
+        $decision = (new BusinessScopeEnforcer)->apply($plan, $scope);
+
+        self::assertTrue($decision->allowed);
+        self::assertSame($structuredFilter, $decision->plan?->filters['oper']['and'][0]);
+        self::assertSame('tenant_id|=|tenant-7', $decision->plan?->filters['oper']['and'][1]);
     }
 
     public function test_conflict_detector_blocks_explicit_scope_contradiction(): void
