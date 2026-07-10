@@ -22,13 +22,26 @@ final readonly class ConfigBusinessScopeResolver implements BusinessScopeResolve
         }
 
         $filters = [];
+        $missingRequired = [];
 
-        foreach ($this->globalFilters($context) as $filter) {
+        foreach ($this->globalFilters($context, $missingRequired) as $filter) {
             $filters[] = $filter;
         }
 
-        foreach ($this->resourceFilters($resource, $context) as $filter) {
+        foreach ($this->resourceFilters($resource, $context, $missingRequired) as $filter) {
             $filters[] = $filter;
+        }
+
+        if ($missingRequired !== [] && (bool) ($this->config['fail_closed'] ?? true)) {
+            return BusinessScope::deny(
+                resource: $resource,
+                operation: $operation,
+                reason: 'Required business scope context is missing.',
+                metadata: [
+                    'code' => 'ADP_SCOPE_MISSING_CONTEXT',
+                    'missing_scope' => $missingRequired,
+                ],
+            );
         }
 
         if ($filters === []) {
@@ -54,9 +67,10 @@ final readonly class ConfigBusinessScopeResolver implements BusinessScopeResolve
     }
 
     /**
+     * @param array<int, array<string, mixed>> $missingRequired
      * @return array<int, BusinessScopeFilter>
      */
-    private function globalFilters(AgentContext $context): array
+    private function globalFilters(AgentContext $context, array &$missingRequired): array
     {
         $filters = [];
         $globalScopes = (array) ($this->config['global_scopes'] ?? []);
@@ -74,6 +88,7 @@ final readonly class ConfigBusinessScopeResolver implements BusinessScopeResolve
 
             $value = $attribute === 'tenant_id' ? $context->tenantId : ($context->attributes[$attribute] ?? null);
             if ($value === null || $value === '') {
+                $this->recordMissingRequiredScope($missingRequired, 'global', $field, $attribute, $scopeName, $scopeConfig);
                 continue;
             }
 
@@ -89,9 +104,10 @@ final readonly class ConfigBusinessScopeResolver implements BusinessScopeResolve
     }
 
     /**
+     * @param array<int, array<string, mixed>> $missingRequired
      * @return array<int, BusinessScopeFilter>
      */
-    private function resourceFilters(string $resource, AgentContext $context): array
+    private function resourceFilters(string $resource, AgentContext $context, array &$missingRequired): array
     {
         $resourceConfig = $this->resourceScopeConfig($resource);
         if (! (bool) ($resourceConfig['enabled'] ?? true)) {
@@ -115,7 +131,8 @@ final readonly class ConfigBusinessScopeResolver implements BusinessScopeResolve
                 $value = $attribute === 'tenant_id' ? $context->tenantId : ($context->attributes[$attribute] ?? null);
             }
 
-            if (($value === null || $value === '') && (bool) ($filterConfig['required'] ?? true)) {
+            if ($value === null || $value === '') {
+                $this->recordMissingRequiredScope($missingRequired, 'resource', $field, $attribute, $resource, $filterConfig);
                 continue;
             }
 
@@ -128,6 +145,30 @@ final readonly class ConfigBusinessScopeResolver implements BusinessScopeResolve
         }
 
         return $filters;
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $missingRequired
+     * @param array<string, mixed> $config
+     */
+    private function recordMissingRequiredScope(
+        array &$missingRequired,
+        string $type,
+        string $field,
+        ?string $attribute,
+        string|int $scopeName,
+        array $config,
+    ): void {
+        if (! (bool) ($config['required'] ?? true)) {
+            return;
+        }
+
+        $missingRequired[] = [
+            'type' => $type,
+            'scope' => (string) $scopeName,
+            'field' => $field,
+            'attribute' => $attribute,
+        ];
     }
 
     /**
