@@ -195,6 +195,7 @@ return [
 
     'runtime_context' => [
         'tenant_header' => env('AGENT_PROTOCOL_TENANT_HEADER', 'X-Tenant-Id'),
+        'trust_tenant_header' => env('AGENT_PROTOCOL_TRUST_TENANT_HEADER', false),
         'locale_header' => env('AGENT_PROTOCOL_LOCALE_HEADER', 'Accept-Language'),
         'user_identifier_attribute' => 'id',
         'tenant_attribute' => 'tenant_id',
@@ -219,6 +220,7 @@ return [
                 'attribute' => 'tenant_id',
                 'field' => 'tenant_id',
                 'operator' => '=',
+                'required' => true,
             ],
         ],
 
