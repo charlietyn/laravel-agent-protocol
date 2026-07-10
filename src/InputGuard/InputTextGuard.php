@@ -28,9 +28,10 @@ final readonly class InputTextGuard
             return InputTextValidationResult::allowed($input, $input, metadata: $this->metrics($input, $input));
         }
 
+        $preNormalizationViolations = $this->preNormalizationViolations($input);
         $normalized = $this->normalizer->normalize($input, $this->policy);
         $normalizedInput = $normalized['input'];
-        $violations = [];
+        $violations = $preNormalizationViolations;
         $truncated = false;
 
         $maxCharsViolation = $this->maxCharsViolation($normalizedInput);
@@ -76,6 +77,21 @@ final readonly class InputTextGuard
         );
     }
 
+    /**
+     * @return array<int, InputTextViolation>
+     */
+    private function preNormalizationViolations(string $input): array
+    {
+        if (! $this->policy->denyBinaryContent || preg_match('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', $input) !== 1) {
+            return [];
+        }
+
+        return [new InputTextViolation(
+            code: 'ADP_INPUT_BINARY_CONTENT_DETECTED',
+            message: 'The input text contains binary or unsafe control characters.',
+        )];
+    }
+
     private function maxCharsViolation(string $input): ?InputTextViolation
     {
         $chars = mb_strlen($input);
@@ -114,13 +130,6 @@ final readonly class InputTextGuard
                 code: 'ADP_INPUT_TOO_MANY_LINES',
                 message: 'The input text exceeds the configured maximum line limit.',
                 details: ['max_lines' => $this->policy->maxLines, 'actual_lines' => $lines],
-            );
-        }
-
-        if ($this->policy->denyBinaryContent && preg_match('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', $input) === 1) {
-            $violations[] = new InputTextViolation(
-                code: 'ADP_INPUT_BINARY_CONTENT_DETECTED',
-                message: 'The input text contains binary or unsafe control characters.',
             );
         }
 
@@ -195,9 +204,7 @@ final readonly class InputTextGuard
             return false;
         }
 
-        $threshold = $this->policy->maxRepeatedCharRun + 1;
-
-        return preg_match('/(.)\1{'.$threshold.',}/us', $input) === 1;
+        return preg_match('/(.)\1{'.$this->policy->maxRepeatedCharRun.',}/us', $input) === 1;
     }
 
     /**
