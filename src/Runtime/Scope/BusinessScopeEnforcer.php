@@ -68,11 +68,14 @@ final readonly class BusinessScopeEnforcer
             $and = [$and];
         }
 
-        $existing = array_values(array_filter($and, static fn (mixed $filter): bool => is_string($filter)));
+        $existing = array_values($and);
+        $existingExpressions = array_values(array_filter($existing, static fn (mixed $filter): bool => is_string($filter)));
+
         foreach ($scope->filters as $filter) {
             $expression = $filter->expression();
-            if (! in_array($expression, $existing, true)) {
+            if (! in_array($expression, $existingExpressions, true)) {
                 $existing[] = $expression;
+                $existingExpressions[] = $expression;
             }
         }
 
