@@ -161,7 +161,7 @@ final class ReleaseScript
         if ($this->hasFlag('skip-static')) {
             $this->skip('Static analysis skipped by --skip-static.');
         } else {
-            $this->runCommand([$this->vendorBin('phpstan'), 'analyse']);
+            $this->runCommand([$this->vendorBin('phpstan'), 'analyse', '--memory-limit=1G']);
         }
 
         if ($this->hasFlag('with-rector')) {

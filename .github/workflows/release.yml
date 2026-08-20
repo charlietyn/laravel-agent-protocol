@@ -33,7 +33,7 @@ jobs:
         run: vendor/bin/pint --test
 
       - name: PHPStan
-        run: vendor/bin/phpstan analyse
+        run: composer analyse
 
       - name: Tests
         run: vendor/bin/pest

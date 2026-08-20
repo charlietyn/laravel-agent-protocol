@@ -14,7 +14,7 @@ Ronu\LaravelAgentProtocol\Providers\AgentProtocolServiceProvider::class
 ## Requirements
 
 - PHP `^8.3`
-- Laravel 11 or 12
+- Laravel 11, 12 or 13
 - A Laravel API, preferably using `ronu/rest-generic-class`
 
 ## Recommended First Commands

@@ -136,7 +136,7 @@ library has:
 ```bash
 composer validate --strict
 vendor/bin/pint --test
-vendor/bin/phpstan analyse
+vendor/bin/phpstan analyse --memory-limit=1G
 vendor/bin/pest
 ```
 
