@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.2.2 - 2026-08-20
+
+- Added Laravel 13 support, including Testbench 11, Pest 4 and PHPUnit 12.
+
+## 0.2.1 - 2026-07-09
+
 - Added package publication metadata for Packagist and GitHub.
 - Added MIT license file and Composer dist export rules.
 - Added reusable `scripts/release.php` for Composer library releases.

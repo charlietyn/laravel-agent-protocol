@@ -7,7 +7,7 @@
 <p align="center">
   <a href="https://packagist.org/packages/ronu/laravel-agent-protocol"><img src="https://img.shields.io/packagist/v/ronu/laravel-agent-protocol.svg?style=flat-square" alt="Packagist Version"></a>
   <img src="https://img.shields.io/badge/PHP-%5E8.3-777BB4?style=flat-square&logo=php" alt="PHP 8.3">
-  <img src="https://img.shields.io/badge/Laravel-11%20%7C%2012-FF2D20?style=flat-square&logo=laravel" alt="Laravel 11 or 12">
+  <img src="https://img.shields.io/badge/Laravel-11%20%7C%2012%20%7C%2013-FF2D20?style=flat-square&logo=laravel" alt="Laravel 11, 12 or 13">
   <img src="https://img.shields.io/badge/ADP-Agent%20Discovery%20Protocol-111827?style=flat-square" alt="ADP">
   <img src="https://img.shields.io/badge/MCP-ready-0F766E?style=flat-square" alt="MCP ready">
   <img src="https://img.shields.io/badge/n8n-ready-EA4B71?style=flat-square&logo=n8n" alt="n8n ready">
@@ -129,7 +129,7 @@ flowchart LR
 
 ### Laravel-native integration
 
-- Laravel 11 / 12
+- Laravel 11 / 12 / 13
 - PHP `^8.3`
 - Eloquent models
 - FormRequests
@@ -306,7 +306,7 @@ php artisan vendor:publish --tag=agent-protocol-config
 ## Requirements
 
 - PHP `^8.3`
-- Laravel `^11.0` or `^12.0`
+- Laravel `^11.0`, `^12.0` or `^13.0`
 - Recommended: `ronu/rest-generic-class`
 
 ---
